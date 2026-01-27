@@ -124,7 +124,7 @@ TEMPLATES = [
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
 CLOUDINARY_STORAGE = {
-    "CLOUD_NAME": "TU_CLOUD",
-    "API_KEY": "TU_API_KEY",
-    "API_SECRET": "TU_API_SECRET"
+    "CLOUD_NAME": "abelz5",
+    "API_KEY": "931178633149148",
+    "API_SECRET": "7ZyGg6GqrYmFGOR-BeytHFRvt3U"
 }
