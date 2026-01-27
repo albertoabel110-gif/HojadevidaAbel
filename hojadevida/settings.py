@@ -57,6 +57,8 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "paginausuario",
+    "cloudinary",
+    "cloudinary_storage",
 ]
 
 # =========================
@@ -118,3 +120,11 @@ TEMPLATES = [
         },
     },
 ]
+
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+
+CLOUDINARY_STORAGE = {
+    "CLOUD_NAME": "TU_CLOUD",
+    "API_KEY": "TU_API_KEY",
+    "API_SECRET": "TU_API_SECRET"
+}
