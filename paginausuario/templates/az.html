@@ -25,9 +25,8 @@
     <li class="nav-item">
         <a href="{% url 'user_dashboard' %}" class="btn btn-outline-light btn-sm">Inicio</a>
         <a href="/admin/" class="btn btn-outline-light btn-sm">Administrar</a>
-        {% if request.user.is_staff %}
-             <a href="{% url 'secciones_admin' %}" class="btn btn-warning btn-sm">Secciones</a>
-        {% endif %}
+         <a href="{% url 'secciones_admin' %}" class="btn btn-warning btn-sm">Secciones</a>
+        
 
     </li>
 </nav>
