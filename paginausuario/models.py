@@ -42,8 +42,8 @@ class DatosPersonales(models.Model):
     telefonoconvencional = models.CharField(max_length=15)
     telefonofijo = models.CharField(max_length=15)
 
-    direcciontrabajo = models.CharField(max_length=50)
-    direcciondomiciliaria = models.CharField(max_length=50)
+    direcciontrabajo = models.CharField(max_length=200)
+    direcciondomiciliaria = models.CharField(max_length=200)
 
     sitioweb = models.CharField(max_length=60)
 
@@ -66,9 +66,9 @@ class ExperienciaLaboral(models.Model):
         db_column="idperfilconqueestaactivo"
     )
 
-    cargodesempenado = models.CharField(max_length=100)
+    cargodesempenado = models.CharField(max_length=200)
     nombrempresa = models.CharField(max_length=50)
-    lugarempresa = models.CharField(max_length=50)
+    lugarempresa = models.CharField(max_length=200)
     emailempresa = models.CharField(max_length=100)
     sitiowebempresa = models.CharField(max_length=100)
 
@@ -110,7 +110,7 @@ class Reconocimiento(models.Model):
     tiporeconocimiento = models.CharField(max_length=100, choices=TIPO_CHOICES)
 
     fechareconocimiento = models.DateField()
-    descripcionreconocimiento = models.CharField(max_length=100)
+    descripcionreconocimiento = models.CharField(max_length=200)
 
     entidadpatrocinadora = models.CharField(max_length=100)
     nombrecontactoauspicia = models.CharField(max_length=100)
@@ -141,7 +141,7 @@ class CursoRealizado(models.Model):
     fechafin = models.DateField()
 
     totalhoras = models.CharField(max_length=100)
-    descripcioncurso = models.CharField(max_length=100)
+    descripcioncurso = models.CharField(max_length=200)
 
     entidadpatrocinadora = models.CharField(max_length=100)
     nombrecontactoauspicia = models.CharField(max_length=100)
@@ -170,7 +170,7 @@ class ProductoAcademico(models.Model):
 
     nombrerecurso = models.CharField(max_length=100)
     clasificador = models.CharField(max_length=100)
-    descripcion = models.CharField(max_length=100)
+    descripcion = models.CharField(max_length=200)
 
     activarparaqueseveaenfront = models.BooleanField(default=True)
 
@@ -189,7 +189,7 @@ class ProductoLaboral(models.Model):
 
     nombreproducto = models.CharField(max_length=100)
     fechaproducto = models.DateField()
-    descripcion = models.CharField(max_length=100)
+    descripcion = models.CharField(max_length=200)
 
     activarparaqueseveaenfront = models.BooleanField(default=True)
 
@@ -217,7 +217,7 @@ class VentaGarage(models.Model):
     ]
     estadoproducto = models.CharField(max_length=40, choices=ESTADO_CHOICES)
 
-    descripcion = models.CharField(max_length=100)
+    descripcion = models.CharField(max_length=200)
     valordelbien = models.DecimalField(max_digits=7, decimal_places=2)  # opcional subir a 7 por si hay valores mayores
 
     # ✅ NUEVO: fecha de publicación
