@@ -121,10 +121,13 @@ TEMPLATES = [
     },
 ]
 
-DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+# =========================
+# CLOUDINARY (MEDIA)
+# =========================
+DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
 
 CLOUDINARY_STORAGE = {
-    "CLOUD_NAME": "abelz5",
-    "API_KEY": "931178633149148",
-    "API_SECRET": "7ZyGg6GqrYmFGOR-BeytHFRvt3U"
+    "CLOUD_NAME": os.environ.get("CLOUD_NAME", ""),
+    "API_KEY": os.environ.get("API_KEY", ""),
+    "API_SECRET": os.environ.get("API_SECRET", ""),
 }
