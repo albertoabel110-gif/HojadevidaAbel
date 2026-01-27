@@ -80,11 +80,7 @@ class ExperienciaLaboral(models.Model):
 
     activarparaqueseveaenfront = models.BooleanField(default=True)
 
-    rutacertificado = models.FileField(
-    upload_to="certificados_laborales/",
-    null=True,
-    blank=True
-    )
+    rutacertificado = CloudinaryField('certificadolaboral', null=True, blank=True)
 
     class Meta:
         db_table = "EXPERIENCIALABORAL"
@@ -115,11 +111,7 @@ class Reconocimiento(models.Model):
     telefonocontactoauspicia = models.CharField(max_length=60)
 
     activarparaqueseveaenfront = models.BooleanField(default=True)
-    rutacertificado = models.FileField(
-    upload_to="certificados_reconocimientos/",
-    null=True,
-    blank=True
-    )
+    rutacertificado =  CloudinaryField('certificadoreconocimiento', null=True, blank=True)
 
     class Meta:
         db_table = "RECONOCIMIENTOS"
@@ -147,11 +139,7 @@ class CursoRealizado(models.Model):
     emailempresapatrocinadora = models.CharField(max_length=60)
 
     activarparaqueseveaenfront = models.BooleanField(default=True)
-    rutacertificado = models.FileField(
-    upload_to="certificados_cursos/",
-    null=True,
-    blank=True
-    ) 
+    rutacertificado = CloudinaryField('certificado', null=True, blank=True)
 
     class Meta:
         db_table = "CURSOSREALIZADOS"
@@ -224,11 +212,8 @@ class VentaGarage(models.Model):
     activarparaqueseveaenfront = models.BooleanField(default=True)
 
     # ✅ Imagen del producto (mejor que FileField)
-    articulo = models.ImageField(
-        upload_to="articulo_ventagarage/",
-        null=True,
-        blank=True
-    )
+    articulo =  CloudinaryField('articulo', null=True, blank=True)
+    
 
     class Meta:
         db_table = "VENTAGARAGE"
