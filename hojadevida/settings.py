@@ -84,7 +84,7 @@ WSGI_APPLICATION = 'hojadevida.wsgi.application'
 DATABASES = {
     'default': dj_database_url.config(
         # Replace this value with your local database's connection string.
-        default='postgresql://bdhojadevida_2zqp_user:aBrFRZwOjWeCTuRg2Y6w0cDzFOwbTrlM@dpg-d5sbs563jp1c73epirj0-a/bdhojadevida_2zqp',
+        default='postgresql://bdhojadevidaabel_user:OeSul1qw1UPKacIoxQlJDVdLoKEZJTak@dpg-d5sd0ui4d50c73da1l8g-a/bdhojadevidaabel',
         
         conn_max_age=600
     )
