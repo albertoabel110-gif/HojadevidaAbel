@@ -139,7 +139,7 @@ class CursoRealizado(models.Model):
     emailempresapatrocinadora = models.CharField(max_length=60)
 
     activarparaqueseveaenfront = models.BooleanField(default=True)
-    rutacertificado = CloudinaryField('certificado', null=True, blank=True)
+    rutacertificado = CloudinaryField('file', resource_type='raw', null=True, blank=True)
 
     class Meta:
         db_table = "CURSOSREALIZADOS"
