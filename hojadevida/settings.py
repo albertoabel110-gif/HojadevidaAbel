@@ -56,11 +56,21 @@ MIDDLEWARE = [
 ROOT_URLCONF = "hojadevida.urls"
 WSGI_APPLICATION = "hojadevida.wsgi.application"
 
+import os
+from pathlib import Path
+from dotenv import load_dotenv
+import dj_database_url
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Cargar archivo .env
+load_dotenv()
+
 DATABASES = {
-    "default": dj_database_url.config(
-        default=os.environ.get("DATABASE_URL"),
+    "default": dj_database_url.parse(
+        os.environ["DATABASE_URL"],
         conn_max_age=600,
-        ssl_require=True,
+        ssl_require=True  # Si Render requiere SSL (casi siempre sí)
     )
 }
 
