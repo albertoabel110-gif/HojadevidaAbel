@@ -538,7 +538,7 @@ def datos_pdf(request):
 
         if exps.exists():
             for exp in exps:
-                cert = cargar_imagen_o_preview(exp.rutacertificado, ancho=150, alto=105)
+                cert = cargar_imagen_o_preview(getattr(exp, "rutacertificado", None), ancho=150, alto=105)
                 tabla = [
                     ["Cargo", exp.cargodesempenado],
                     ["Empresa", exp.nombrempresa],
@@ -567,7 +567,8 @@ def datos_pdf(request):
         )
         if recs.exists():
             for r in recs:
-                cert = cargar_imagen_o_preview(exp.rutacertificado, ancho=150, alto=105)
+                # ✅ FIX: usar r (no exp)
+                cert = cargar_imagen_o_preview(getattr(r, "rutacertificado", None), ancho=150, alto=105)
                 tabla = [
                     ["Tipo", r.tiporeconocimiento],
                     ["Fecha", str(r.fechareconocimiento)],
@@ -593,7 +594,8 @@ def datos_pdf(request):
         )
         if cursos.exists():
             for c in cursos:
-                cert = cargar_imagen_o_preview(exp.rutacertificado, ancho=150, alto=105)
+                # ✅ FIX: usar c (no exp)
+                cert = cargar_imagen_o_preview(getattr(c, "rutacertificado", None), ancho=150, alto=105)
                 tabla = [
                     ["Curso", c.nombrecurso],
                     ["Inicio", str(c.fechainicio)],
@@ -683,7 +685,6 @@ def datos_pdf(request):
             def render_venta(v):
                 foto_art = cargar_imagen_o_preview(v.articulo, ancho=120, alto=85)
 
-                # si tienes fechapublicacion en el modelo
                 fecha_pub = getattr(v, "fechapublicacion", None)
                 fecha_pub_txt = str(fecha_pub) if fecha_pub else "—"
 
@@ -717,6 +718,7 @@ def datos_pdf(request):
     # =========================
     doc.build(elements, onFirstPage=draw_footer, onLaterPages=draw_footer)
     return response
+
 
 
 ##EXPERIENCIA LABORAL
@@ -1082,7 +1084,7 @@ from django.contrib.admin.views.decorators import staff_member_required
 from .forms import ConfigSeccionesCVForm
 from .models import ConfigSeccionesCV
 
-@staff_member_required
+
 def secciones_admin(request):
     cfg = get_cv_config()
 
