@@ -55,10 +55,10 @@ INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
-    "django.contrib.staticfiles",
     "paginausuario",
-    "cloudinary",
-    "cloudinary_storage",
+    'cloudinary_storage',
+    'django.contrib.staticfiles',
+    'cloudinary',
 ]
 
 # =========================
@@ -102,6 +102,7 @@ STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
 # =========================
 # TEMPLATES
@@ -121,15 +122,14 @@ TEMPLATES = [
     },
 ]
 
-# =========================
-# CLOUDINARY (MEDIA)
-# =========================
-DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
+import cloudinary
 
-CLOUDINARY_STORAGE = {
-    "CLOUD_NAME": os.environ.get("CLOUD_NAME", ""),
-    "API_KEY": os.environ.get("API_KEY", ""),
-    "API_SECRET": os.environ.get("API_SECRET", ""),
-}
+cloudinary.config(
+    cloud_name = "dglsedhdi",
+    api_key = "931178633149148",
+    api_secret = "7ZyGg6GqrYmFGOR-BeytHFRvt3U",
+    secure = True
+)
+
 
 

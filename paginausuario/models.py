@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
-
+from django.db import models
+from cloudinary.models import CloudinaryField
 
 class Task(models.Model):
     title=models.CharField(max_length=100)
@@ -48,7 +49,7 @@ class DatosPersonales(models.Model):
     sitioweb = models.CharField(max_length=60)
 
     foto = models.ImageField(
-        upload_to="fotos_perfil/",
+        CloudinaryField('image'),
         null=True,
         blank=True
     )
