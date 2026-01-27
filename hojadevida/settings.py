@@ -37,11 +37,13 @@ if WEBSITE_HOSTNAME:
 # =========================
 # DOTENV (LOCAL ONLY)
 # =========================
+# Solo intenta cargar .env si existe (en Render no existe y no se necesita)
 if os.path.exists(BASE_DIR / ".env"):
     try:
         from dotenv import load_dotenv
         load_dotenv(BASE_DIR / ".env")
     except Exception:
+        # Si no está python-dotenv instalado, no rompemos local (aunque lo ideal es instalarlo)
         pass
 
 # =========================
@@ -92,33 +94,14 @@ DATABASES = {
 }
 
 # =========================
-# STATIC
+# STATIC / MEDIA
 # =========================
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
-# =========================
-# CLOUDINARY (MEDIA) + STATICFILES (Django 4.2+ / 5.x)
-# =========================
-STORAGES = {
-    "default": {
-        "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
-    },
-    "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
-    },
-}
-
-CLOUDINARY_STORAGE = {
-    "CLOUD_NAME": os.environ.get("CLOUD_NAME", ""),
-    "API_KEY": os.environ.get("API_KEY", ""),
-    "API_SECRET": os.environ.get("API_SECRET", ""),
-}
-
-# (Opcional pero útil) si en producción faltan envs, que falle claro:
-if not DEBUG:
-    if not CLOUDINARY_STORAGE["CLOUD_NAME"] or not CLOUDINARY_STORAGE["API_KEY"] or not CLOUDINARY_STORAGE["API_SECRET"]:
-        raise RuntimeError("Faltan variables CLOUDINARY: CLOUD_NAME / API_KEY / API_SECRET en Render")
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
 
 # =========================
 # TEMPLATES
@@ -126,7 +109,7 @@ if not DEBUG:
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [],  # o [BASE_DIR / "templates"] si tienes templates globales
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -137,3 +120,16 @@ TEMPLATES = [
         },
     },
 ]
+
+# =========================
+# CLOUDINARY (MEDIA)
+# =========================
+DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
+
+CLOUDINARY_STORAGE = {
+    "CLOUD_NAME": os.environ.get("CLOUD_NAME", ""),
+    "API_KEY": os.environ.get("API_KEY", ""),
+    "API_SECRET": os.environ.get("API_SECRET", ""),
+}
+
+
