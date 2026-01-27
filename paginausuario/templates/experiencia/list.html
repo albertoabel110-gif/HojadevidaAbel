@@ -3,133 +3,296 @@
 {% block title %}Experiencia Laboral{% endblock %}
 
 {% block content %}
-
 <style>
-  /* Corta textos largos para que no rompan la tabla */
-  .text-truncate-cell{
-    max-width: 180px;         /* ajusta a 140/180/220 según te guste */
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  .table-wrap{
+    border:1px solid rgba(0,0,0,.08);
+    border-radius:14px;
+    overflow:hidden;
+    background:#fff;
+  }
+  .card-header-clean{
+    background:#fff;
+    border-bottom:1px solid rgba(0,0,0,.06);
+  }
+  .table-clean{ margin-bottom:0; font-size:.92rem; }
+  .table-clean thead th{
+    position: sticky; top: 0; z-index: 2;
+    background:#111; color:#fff; border-bottom:0;
+    padding:.9rem .75rem; white-space:nowrap;
+  }
+  .table-clean tbody td{
+    vertical-align: top;
+    padding:.85rem .75rem;
+    border-top:1px solid rgba(0,0,0,.06);
+  }
+  .table-clean tbody tr:nth-child(even){ background: rgba(0,0,0,.02); }
+  .table-clean tbody tr:hover{ background: rgba(0,0,0,.04); }
+
+  /* Mostrar texto completo */
+  .cell-wrap{
+    white-space: normal !important;
+    word-break: break-word;
+    overflow-wrap:anywhere;
+  }
+
+  /* Columnas */
+  .col-cargo{ min-width:220px; }
+  .col-empresa{ min-width:220px; max-width:320px; }
+  .col-lugar{ min-width:180px; }
+  .col-email{ min-width:240px; }
+  .col-web{ min-width:260px; max-width:380px; }
+  .col-contacto{ min-width:220px; }
+  .col-funciones{ min-width:360px; max-width:560px; }
+  .col-cert{ min-width:140px; }
+  .col-acciones{ min-width:130px; }
+
+  .btn-icon{
+    width:38px; height:34px;
+    display:inline-flex; align-items:center; justify-content:center;
+    padding:0;
+  }
+  .badge-soft{
+    background: rgba(0,0,0,.06);
+    color:#222;
+    font-weight:600;
+  }
+
+  /* Barra filtros */
+  .filters{
+    display:flex;
+    flex-wrap:wrap;
+    gap:.75rem;
+    align-items:center;
+  }
+  .filters .form-control,
+  .filters .form-select{
+    height:38px;
+  }
+  .hint{
+    font-size:.85rem;
+    color:#6c757d;
   }
 </style>
 
 <div class="card shadow-sm border-0">
-  <div class="card-header bg-white d-flex justify-content-between align-items-center">
+  <div class="card-header card-header-clean d-flex flex-wrap gap-2 justify-content-between align-items-center">
     <div>
       <h3 class="mb-0">Experiencia Laboral</h3>
       <small class="text-muted">Registro de experiencia laboral</small>
     </div>
 
-    {% if request.user.is_authenticated and request.user.is_staff %}
-      <a href="{% url 'experiencia_create' %}" class="btn btn-dark btn-sm">➕ Nueva experiencia</a>
-    {% endif %}
+    <div class="d-flex align-items-center gap-2">
+      <span class="badge badge-soft">Total: {{ experiencias|length }}</span>
+
+      {% if request.user.is_authenticated and request.user.is_staff %}
+        <a href="{% url 'experiencia_create' %}" class="btn btn-dark btn-sm">➕ Nueva experiencia</a>
+      {% endif %}
+    </div>
   </div>
 
   <div class="card-body">
-    <div class="table-responsive">
-      <table class="table table-sm table-striped table-hover align-middle mb-0">
-        <thead class="table-dark">
-          <tr>
-            {% if request.user.is_authenticated and request.user.is_staff %}
-              <th class="text-nowrap">ID</th>
-            {% endif %}
-            <th class="text-nowrap">Cargo</th>
-            <th class="text-nowrap">Empresa</th>
-            <th class="text-nowrap">Lugar</th>
-            <th class="text-nowrap">Email</th>
-            <th class="text-nowrap">Sitio Web</th>
-            <th class="text-nowrap">Contacto</th>
-            <th class="text-nowrap">Teléfono</th>
-            <th class="text-nowrap">Inicio</th>
-            <th class="text-nowrap">Fin</th>
-            <th class="text-nowrap">Funciones</th>
-            <th class="text-nowrap">Certificado</th>
 
-            {% if request.user.is_authenticated and request.user.is_staff %}
-              <th class="text-end text-nowrap">Acciones</th>
-            {% endif %}
-          </tr>
-        </thead>
+    <!-- Barra de búsqueda / filtros -->
+    <div class="filters mb-3">
+      <div class="flex-grow-1" style="min-width:260px;">
+        <input id="searchInput" type="search" class="form-control"
+               placeholder="🔎 Buscar (cargo, empresa, lugar, funciones, contacto, email, teléfono, web...)">
+        <div class="hint mt-1">Tip: escribe cualquier palabra y filtra en vivo.</div>
+      </div>
 
-        <tbody>
-          {% for exp in experiencias %}
-          <tr>
-            {% if request.user.is_authenticated and request.user.is_staff %}
-              <td class="text-muted">{{ exp.idexperiencialaboral }}</td>
-            {% endif %}
+      <div style="min-width:180px;">
+        <select id="rowsPerPage" class="form-select">
+          <option value="10">Mostrar 10</option>
+          <option value="25" selected>Mostrar 25</option>
+          <option value="50">Mostrar 50</option>
+          <option value="100">Mostrar 100</option>
+          <option value="999999">Mostrar todo</option>
+        </select>
+      </div>
 
-            <td class="fw-semibold text-nowrap">{{ exp.cargodesempenado }}</td>
-            <td class="text-nowrap">{{ exp.nombrempresa }}</td>
-            <td class="text-nowrap">{{ exp.lugarempresa }}</td>
-
-            <td class="text-truncate-cell" title="{{ exp.emailempresa }}">
-              {{ exp.emailempresa }}
-            </td>
-
-            <td class="text-truncate-cell" title="{{ exp.sitiowebempresa }}">
-              {% if exp.sitiowebempresa %}
-                <a href="{{ exp.sitiowebempresa }}" target="_blank" rel="noopener" class="link-light-emphasis">
-                  {{ exp.sitiowebempresa }}
-                </a>
-              {% else %}
-                <span class="text-muted">—</span>
-              {% endif %}
-            </td>
-
-            <td class="text-truncate-cell" title="{{ exp.nombrecontactoempresarial }}">
-              {{ exp.nombrecontactoempresarial }}
-            </td>
-
-            <td class="text-nowrap">{{ exp.telefonocontactoempresarial }}</td>
-
-            <td class="text-nowrap">{{ exp.fechainiciogestion|date:"d M, Y" }}</td>
-
-            <td class="text-nowrap">
-              {% if exp.fechafingestion %}
-                {{ exp.fechafingestion|date:"d M, Y" }}
-              {% else %}
-                <span class="badge text-bg-success">Actual</span>
-              {% endif %}
-            </td>
-
-            <td class="text-truncate-cell" title="{{ exp.descripcionfunciones }}">
-              {{ exp.descripcionfunciones }}
-            </td>
-
-            <td class="text-nowrap">
-              {% if exp.rutacertificado %}
-                <a class="btn btn-outline-secondary btn-sm" href="{{ exp.rutacertificado.url }}" target="_blank">
-                  Ver
-                </a>
-              {% else %}
-                <span class="badge text-bg-light">Sin archivo</span>
-              {% endif %}
-            </td>
-
-            {% if request.user.is_authenticated and request.user.is_staff %}
-            <td class="text-end text-nowrap">
-              <a href="{% url 'experiencia_update' exp.pk %}" class="btn btn-warning btn-sm">✏️</a>
-              <a href="{% url 'experiencia_delete' exp.pk %}" class="btn btn-danger btn-sm">🗑️</a>
-            </td>
-            {% endif %}
-          </tr>
-
-          {% empty %}
-          <tr>
-            <td colspan="13" class="text-center text-muted py-4">
-              No hay experiencias registradas
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-
-      </table>
+      <div class="ms-auto d-flex align-items-center gap-2">
+        <span class="badge badge-soft" id="resultsCount">Mostrando 0</span>
+        <button id="clearBtn" type="button" class="btn btn-outline-secondary btn-sm">Limpiar</button>
+      </div>
     </div>
+
+    <div class="table-wrap">
+      <div class="table-responsive" style="max-height:70vh;">
+        <table class="table table-clean align-middle" id="expTable">
+          <thead>
+            <tr>
+              {% if request.user.is_authenticated and request.user.is_staff %}
+                <th class="text-nowrap">ID</th>
+              {% endif %}
+              <th class="text-nowrap col-cargo">Cargo</th>
+              <th class="text-nowrap col-empresa">Empresa</th>
+              <th class="text-nowrap col-lugar">Lugar</th>
+              <th class="text-nowrap col-email">Email</th>
+              <th class="text-nowrap col-web">Sitio Web</th>
+              <th class="text-nowrap col-contacto">Contacto</th>
+              <th class="text-nowrap">Teléfono</th>
+              <th class="text-nowrap">Inicio</th>
+              <th class="text-nowrap">Fin</th>
+              <th class="text-nowrap col-funciones">Funciones</th>
+              <th class="text-nowrap col-cert">Certificado</th>
+
+              {% if request.user.is_authenticated and request.user.is_staff %}
+                <th class="text-end text-nowrap col-acciones">Acciones</th>
+              {% endif %}
+            </tr>
+          </thead>
+
+          <tbody>
+            {% for exp in experiencias %}
+            <tr>
+              {% if request.user.is_authenticated and request.user.is_staff %}
+                <td class="text-muted">{{ exp.idexperiencialaboral }}</td>
+              {% endif %}
+
+              <td class="fw-semibold cell-wrap col-cargo">{{ exp.cargodesempenado|default:"—" }}</td>
+              <td class="cell-wrap col-empresa">{{ exp.nombrempresa|default:"—" }}</td>
+              <td class="cell-wrap col-lugar">{{ exp.lugarempresa|default:"—" }}</td>
+
+              <td class="cell-wrap col-email">
+                {% if exp.emailempresa %}
+                  <a href="mailto:{{ exp.emailempresa }}" class="text-decoration-none">
+                    {{ exp.emailempresa }}
+                  </a>
+                {% else %}
+                  —
+                {% endif %}
+              </td>
+
+              <td class="cell-wrap col-web">
+                {% if exp.sitiowebempresa %}
+                  <a href="{{ exp.sitiowebempresa }}" target="_blank" rel="noopener" class="text-decoration-none">
+                    {{ exp.sitiowebempresa }}
+                  </a>
+                {% else %}
+                  —
+                {% endif %}
+              </td>
+
+              <td class="cell-wrap col-contacto">{{ exp.nombrecontactoempresarial|default:"—" }}</td>
+
+              <td class="text-nowrap">
+                {% if exp.telefonocontactoempresarial %}
+                  <a href="tel:{{ exp.telefonocontactoempresarial }}" class="text-decoration-none">
+                    {{ exp.telefonocontactoempresarial }}
+                  </a>
+                {% else %}
+                  —
+                {% endif %}
+              </td>
+
+              <td class="text-nowrap">
+                {% if exp.fechainiciogestion %}
+                  {{ exp.fechainiciogestion|date:"d M, Y" }}
+                {% else %}
+                  —
+                {% endif %}
+              </td>
+
+              <td class="text-nowrap">
+                {% if exp.fechafingestion %}
+                  {{ exp.fechafingestion|date:"d M, Y" }}
+                {% else %}
+                  <span class="badge text-bg-success">Actual</span>
+                {% endif %}
+              </td>
+
+              <td class="cell-wrap col-funciones">{{ exp.descripcionfunciones|default:"—" }}</td>
+
+              <td class="text-nowrap col-cert">
+                {% if exp.rutacertificado %}
+                  <a class="btn btn-outline-secondary btn-sm" href="{{ exp.rutacertificado.url }}" target="_blank">
+                    Ver
+                  </a>
+                {% else %}
+                  <span class="badge badge-soft">Sin archivo</span>
+                {% endif %}
+              </td>
+
+              {% if request.user.is_authenticated and request.user.is_staff %}
+              <td class="text-end text-nowrap col-acciones">
+                <a href="{% url 'experiencia_update' exp.pk %}" class="btn btn-warning btn-sm btn-icon" title="Editar">✏️</a>
+                <a href="{% url 'experiencia_delete' exp.pk %}" class="btn btn-danger btn-sm btn-icon" title="Eliminar">🗑️</a>
+              </td>
+              {% endif %}
+            </tr>
+
+            {% empty %}
+            <tr>
+              <td colspan="13" class="text-center text-muted py-4">
+                No hay experiencias registradas
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+
+        </table>
+      </div>
+    </div>
+
   </div>
 </div>
 
+<script>
+  (function () {
+    const searchInput = document.getElementById("searchInput");
+    const rowsPerPage = document.getElementById("rowsPerPage");
+    const clearBtn = document.getElementById("clearBtn");
+    const resultsCount = document.getElementById("resultsCount");
+
+    const table = document.getElementById("expTable");
+    const tbody = table.querySelector("tbody");
+
+    let allRows = Array.from(tbody.querySelectorAll("tr"));
+
+    function isEmptyRow(row){
+      return row.innerText.trim().toLowerCase().includes("no hay experiencias registradas");
+    }
+    allRows = allRows.filter(r => !isEmptyRow(r));
+
+    function applyFilters() {
+      const q = (searchInput.value || "").trim().toLowerCase();
+      const limit = parseInt(rowsPerPage.value, 10);
+
+      // total que matchea (sin límite)
+      const matchedRows = allRows.filter(r => {
+        const text = r.innerText.toLowerCase();
+        return !q || text.includes(q);
+      });
+
+      let visible = 0;
+      allRows.forEach((row) => {
+        const text = row.innerText.toLowerCase();
+        const match = !q || text.includes(q);
+
+        if (match && visible < limit) {
+          row.style.display = "";
+          visible++;
+        } else {
+          row.style.display = "none";
+        }
+      });
+
+      resultsCount.textContent = `Mostrando ${visible} de ${matchedRows.length}`;
+    }
+
+    searchInput.addEventListener("input", applyFilters);
+    rowsPerPage.addEventListener("change", applyFilters);
+
+    clearBtn.addEventListener("click", () => {
+      searchInput.value = "";
+      rowsPerPage.value = "25";
+      applyFilters();
+      searchInput.focus();
+    });
+
+    applyFilters();
+  })();
+</script>
+
 {% endblock %}
-
-
 

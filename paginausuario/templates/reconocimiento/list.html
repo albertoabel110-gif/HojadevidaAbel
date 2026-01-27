@@ -2,109 +2,260 @@
 {% block title %}Reconocimientos{% endblock %}
 
 {% block content %}
-
 <style>
-  .text-truncate-cell{
-    max-width: 200px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  .table-wrap{
+    border:1px solid rgba(0,0,0,.08);
+    border-radius:14px;
+    overflow:hidden;
+    background:#fff;
+  }
+  .card-header-clean{
+    background:#fff;
+    border-bottom:1px solid rgba(0,0,0,.06);
+  }
+  .table-clean{ margin-bottom:0; font-size:.92rem; }
+  .table-clean thead th{
+    position: sticky; top: 0; z-index: 2;
+    background:#111; color:#fff; border-bottom:0;
+    padding:.9rem .75rem; white-space:nowrap;
+  }
+  .table-clean tbody td{
+    vertical-align: top;
+    padding:.85rem .75rem;
+    border-top:1px solid rgba(0,0,0,.06);
+  }
+  .table-clean tbody tr:nth-child(even){ background: rgba(0,0,0,.02); }
+  .table-clean tbody tr:hover{ background: rgba(0,0,0,.04); }
+
+  /* Mostrar texto completo */
+  .cell-wrap{
+    white-space: normal !important;
+    word-break: break-word;
+    overflow-wrap:anywhere;
+  }
+
+  /* Columnas */
+  .col-tipo{ min-width: 200px; }
+  .col-fecha{ min-width: 140px; }
+  .col-desc{ min-width: 360px; max-width: 600px; }
+  .col-ent{ min-width: 240px; max-width: 360px; }
+  .col-contacto{ min-width: 220px; }
+  .col-cert{ min-width: 140px; }
+  .col-acciones{ min-width: 130px; }
+
+  .btn-icon{
+    width:38px; height:34px;
+    display:inline-flex; align-items:center; justify-content:center;
+    padding:0;
+  }
+  .badge-soft{
+    background: rgba(0,0,0,.06);
+    color:#222;
+    font-weight:600;
+  }
+
+  /* Barra filtros */
+  .filters{
+    display:flex;
+    flex-wrap:wrap;
+    gap:.75rem;
+    align-items:center;
+  }
+  .filters .form-control,
+  .filters .form-select{
+    height:38px;
+  }
+  .hint{
+    font-size:.85rem;
+    color:#6c757d;
   }
 </style>
 
 <div class="card shadow-sm border-0">
-  <div class="card-header bg-white d-flex justify-content-between align-items-center">
+  <div class="card-header card-header-clean d-flex flex-wrap gap-2 justify-content-between align-items-center">
     <div>
       <h3 class="mb-0">Reconocimientos</h3>
       <small class="text-muted">Listado de reconocimientos registrados</small>
     </div>
 
-    {% if request.user.is_authenticated and request.user.is_staff %}
-      <a href="{% url 'reconocimiento_create' %}" class="btn btn-dark btn-sm">➕ Nuevo Reconocimiento</a>
-    {% endif %}
+    <div class="d-flex align-items-center gap-2">
+      <span class="badge badge-soft">Total: {{ reconocimientos|length }}</span>
+
+      {% if request.user.is_authenticated and request.user.is_staff %}
+        <a href="{% url 'reconocimiento_create' %}" class="btn btn-dark btn-sm">➕ Nuevo Reconocimiento</a>
+      {% endif %}
+    </div>
   </div>
 
   <div class="card-body">
-    <div class="table-responsive">
-      <table class="table table-sm table-striped table-hover align-middle mb-0">
-        <thead class="table-dark">
-          <tr>
-            {% if request.user.is_authenticated and request.user.is_staff %}
-              <th class="text-nowrap">ID</th>
-            {% endif %}
-            <th class="text-nowrap">Tipo</th>
-            <th class="text-nowrap">Fecha</th>
-            <th class="text-nowrap">Descripción</th>
-            <th class="text-nowrap">Entidad</th>
-            <th class="text-nowrap">Contacto</th>
-            <th class="text-nowrap">Teléfono</th>
-            <th class="text-nowrap">Certificado</th>
 
-            {% if request.user.is_authenticated and request.user.is_staff %}
-              <th class="text-end text-nowrap">Acciones</th>
-            {% endif %}
-          </tr>
-        </thead>
+    <!-- Barra de búsqueda / filtros -->
+    <div class="filters mb-3">
+      <div class="flex-grow-1" style="min-width:260px;">
+        <input id="searchInput" type="search" class="form-control"
+               placeholder="🔎 Buscar (tipo, entidad, contacto, descripción, teléfono...)">
+        <div class="hint mt-1">Tip: escribe cualquier palabra y filtra en vivo.</div>
+      </div>
 
-        <tbody>
-          {% for r in reconocimientos %}
-          <tr>
+      <div style="min-width:180px;">
+        <select id="rowsPerPage" class="form-select">
+          <option value="10">Mostrar 10</option>
+          <option value="25" selected>Mostrar 25</option>
+          <option value="50">Mostrar 50</option>
+          <option value="100">Mostrar 100</option>
+          <option value="999999">Mostrar todo</option>
+        </select>
+      </div>
 
-            {% if request.user.is_authenticated and request.user.is_staff %}
-              <td class="text-muted">{{ r.idreconocimiento }}</td>
-            {% endif %}
-
-            <td class="text-nowrap">{{ r.tiporeconocimiento }}</td>
-
-            <td class="text-nowrap">
-              {{ r.fechareconocimiento|date:"d M, Y" }}
-            </td>
-
-            <td class="text-truncate-cell" title="{{ r.descripcionreconocimiento }}">
-              {{ r.descripcionreconocimiento }}
-            </td>
-
-            <td class="text-truncate-cell" title="{{ r.entidadpatrocinadora }}">
-              {{ r.entidadpatrocinadora }}
-            </td>
-
-            <td class="text-truncate-cell" title="{{ r.nombrecontactoauspicia }}">
-              {{ r.nombrecontactoauspicia }}
-            </td>
-
-            <td class="text-nowrap">{{ r.telefonocontactoauspicia }}</td>
-
-            <td class="text-nowrap">
-              {% if r.rutacertificado %}
-                <a class="btn btn-outline-secondary btn-sm" href="{{ r.rutacertificado.url }}" target="_blank">
-                  Ver
-                </a>
-              {% else %}
-                <span class="badge text-bg-light">Sin archivo</span>
-              {% endif %}
-            </td>
-
-            {% if request.user.is_authenticated and request.user.is_staff %}
-            <td class="text-end text-nowrap">
-              <a href="{% url 'reconocimiento_update' r.pk %}" class="btn btn-warning btn-sm">✏️</a>
-              <a href="{% url 'reconocimiento_delete' r.pk %}" class="btn btn-danger btn-sm">🗑️</a>
-            </td>
-            {% endif %}
-
-          </tr>
-
-          {% empty %}
-          <tr>
-            <td colspan="9" class="text-center text-muted py-4">
-              No hay reconocimientos registrados
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-
-      </table>
+      <div class="ms-auto d-flex align-items-center gap-2">
+        <span class="badge badge-soft" id="resultsCount">Mostrando 0</span>
+        <button id="clearBtn" type="button" class="btn btn-outline-secondary btn-sm">Limpiar</button>
+      </div>
     </div>
+
+    <div class="table-wrap">
+      <div class="table-responsive" style="max-height:70vh;">
+        <table class="table table-clean align-middle" id="recTable">
+          <thead>
+            <tr>
+              {% if request.user.is_authenticated and request.user.is_staff %}
+                <th class="text-nowrap">ID</th>
+              {% endif %}
+              <th class="text-nowrap col-tipo">Tipo</th>
+              <th class="text-nowrap col-fecha">Fecha</th>
+              <th class="text-nowrap col-desc">Descripción</th>
+              <th class="text-nowrap col-ent">Entidad</th>
+              <th class="text-nowrap col-contacto">Contacto</th>
+              <th class="text-nowrap">Teléfono</th>
+              <th class="text-nowrap col-cert">Certificado</th>
+
+              {% if request.user.is_authenticated and request.user.is_staff %}
+                <th class="text-end text-nowrap col-acciones">Acciones</th>
+              {% endif %}
+            </tr>
+          </thead>
+
+          <tbody>
+            {% for r in reconocimientos %}
+            <tr>
+              {% if request.user.is_authenticated and request.user.is_staff %}
+                <td class="text-muted">{{ r.idreconocimiento }}</td>
+              {% endif %}
+
+              <td class="cell-wrap col-tipo">{{ r.tiporeconocimiento|default:"—" }}</td>
+
+              <td class="text-nowrap col-fecha">
+                {% if r.fechareconocimiento %}
+                  {{ r.fechareconocimiento|date:"d M, Y" }}
+                {% else %}
+                  —
+                {% endif %}
+              </td>
+
+              <td class="cell-wrap col-desc">{{ r.descripcionreconocimiento|default:"—" }}</td>
+
+              <td class="cell-wrap col-ent">{{ r.entidadpatrocinadora|default:"—" }}</td>
+
+              <td class="cell-wrap col-contacto">{{ r.nombrecontactoauspicia|default:"—" }}</td>
+
+              <td class="text-nowrap">
+                {% if r.telefonocontactoauspicia %}
+                  <a href="tel:{{ r.telefonocontactoauspicia }}" class="text-decoration-none">
+                    {{ r.telefonocontactoauspicia }}
+                  </a>
+                {% else %}
+                  —
+                {% endif %}
+              </td>
+
+              <td class="text-nowrap col-cert">
+                {% if r.rutacertificado %}
+                  <a class="btn btn-outline-secondary btn-sm" href="{{ r.rutacertificado.url }}" target="_blank">
+                    Ver
+                  </a>
+                {% else %}
+                  <span class="badge badge-soft">Sin archivo</span>
+                {% endif %}
+              </td>
+
+              {% if request.user.is_authenticated and request.user.is_staff %}
+              <td class="text-end text-nowrap col-acciones">
+                <a href="{% url 'reconocimiento_update' r.pk %}" class="btn btn-warning btn-sm btn-icon" title="Editar">✏️</a>
+                <a href="{% url 'reconocimiento_delete' r.pk %}" class="btn btn-danger btn-sm btn-icon" title="Eliminar">🗑️</a>
+              </td>
+              {% endif %}
+            </tr>
+
+            {% empty %}
+            <tr>
+              <td colspan="9" class="text-center text-muted py-4">
+                No hay reconocimientos registrados
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+
+        </table>
+      </div>
+    </div>
+
   </div>
 </div>
+
+<script>
+  (function () {
+    const searchInput = document.getElementById("searchInput");
+    const rowsPerPage = document.getElementById("rowsPerPage");
+    const clearBtn = document.getElementById("clearBtn");
+    const resultsCount = document.getElementById("resultsCount");
+
+    const table = document.getElementById("recTable");
+    const tbody = table.querySelector("tbody");
+
+    let allRows = Array.from(tbody.querySelectorAll("tr"));
+
+    function isEmptyRow(row){
+      return row.innerText.trim().toLowerCase().includes("no hay reconocimientos registrados");
+    }
+    allRows = allRows.filter(r => !isEmptyRow(r));
+
+    function applyFilters() {
+      const q = (searchInput.value || "").trim().toLowerCase();
+      const limit = parseInt(rowsPerPage.value, 10);
+
+      const matchedRows = allRows.filter(r => {
+        const text = r.innerText.toLowerCase();
+        return !q || text.includes(q);
+      });
+
+      let visible = 0;
+      allRows.forEach((row) => {
+        const text = row.innerText.toLowerCase();
+        const match = !q || text.includes(q);
+
+        if (match && visible < limit) {
+          row.style.display = "";
+          visible++;
+        } else {
+          row.style.display = "none";
+        }
+      });
+
+      resultsCount.textContent = `Mostrando ${visible} de ${matchedRows.length}`;
+    }
+
+    searchInput.addEventListener("input", applyFilters);
+    rowsPerPage.addEventListener("change", applyFilters);
+
+    clearBtn.addEventListener("click", () => {
+      searchInput.value = "";
+      rowsPerPage.value = "25";
+      applyFilters();
+      searchInput.focus();
+    });
+
+    applyFilters();
+  })();
+</script>
 
 {% endblock %}
