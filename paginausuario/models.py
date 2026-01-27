@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from django.db import models
 from cloudinary.models import CloudinaryField
 
+
 class Task(models.Model):
     title=models.CharField(max_length=100)
     description = models.TextField(blank=True)
@@ -48,11 +49,7 @@ class DatosPersonales(models.Model):
 
     sitioweb = models.CharField(max_length=60)
 
-    foto = models.ImageField(
-        CloudinaryField('image'),
-        null=True,
-        blank=True
-    )
+    foto = CloudinaryField('image', null=True, blank=True)
 
     def __str__(self):
         return f"{self.nombres} {self.apellidos}"
