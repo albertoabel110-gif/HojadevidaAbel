@@ -1,0 +1,16 @@
+{% extends 'az.html' %}
+
+{% block title %} Producto Académico{% endblock %}
+
+{% block content %}
+<h1>{{ accion }} Producto Académico</h1>
+
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+
+    <button type="submit">💾 Guardar</button>
+    <a href="{% url 'productoacademico_list' %}">Cancelar</a>
+</form>
+{% endblock %}
+

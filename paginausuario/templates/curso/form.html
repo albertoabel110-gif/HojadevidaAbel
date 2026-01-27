@@ -1,0 +1,16 @@
+{% extends 'az.html' %}
+
+{% block title %}{{ accion }} Curso{% endblock %}
+
+{% block content %}
+<h1>{{ accion }} Cursos Realizados</h1>
+
+<form method="POST" enctype="multipart/form-data">
+
+    {% csrf_token %}
+    {{ form.as_p }}
+
+    <button type="submit">💾 Guardar</button>
+    <a href="{% url 'curso_list' %}">Cancelar</a>
+</form>
+{% endblock %}

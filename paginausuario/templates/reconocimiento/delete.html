@@ -1,0 +1,17 @@
+{% extends 'az.html' %}
+{% block title %}Eliminar Reconocimiento{% endblock %}
+
+{% block content %}
+<h2>¿Eliminar reconocimiento?</h2>
+
+<p>
+    <strong>{{ reconocimiento.descripcionreconocimiento }}</strong>
+</p>
+
+<form method="post">
+    {% csrf_token %}
+    <button type="submit">Sí, eliminar</button>
+    <a href="{% url 'reconocimiento_list' %}">Cancelar</a>
+</form>
+{% endblock %}
+

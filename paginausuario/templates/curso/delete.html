@@ -1,0 +1,18 @@
+{% extends 'az.html' %}
+
+{% block title %}Eliminar Curso{% endblock %}
+
+{% block content %}
+<h2>¿Desea eliminar este curso?</h2>
+
+<p>
+    <strong>{{ curso.nombrecurso }}</strong>
+</p>
+
+<form method="post">
+    {% csrf_token %}
+    <button type="submit">🗑️ Eliminar</button>
+    <a href="{% url 'curso_list' %}">Cancelar</a>
+</form>
+{% endblock %}
+

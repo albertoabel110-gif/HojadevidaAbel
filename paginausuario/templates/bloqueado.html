@@ -1,0 +1,11 @@
+{% extends 'az.html' %}
+{% block title %}Sección deshabilitada{% endblock %}
+
+{% block content %}
+<div class="alert alert-warning shadow-sm">
+  <h4 class="mb-2">Sección no disponible</h4>
+  <p class="mb-0">{{ mensaje }}</p>
+</div>
+
+<a href="{% url 'user_dashboard' %}" class="btn btn-dark btn-sm">Volver</a>
+{% endblock %}

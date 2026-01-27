@@ -1,0 +1,20 @@
+{% extends 'az.html' %}
+
+{% block title %}Eliminar Producto Laboral{% endblock %}
+
+{% block content %}
+<h2>¿Está seguro de eliminar este producto laboral?</h2>
+
+<p>
+    <strong>{{ producto.nombreproducto }}</strong>
+</p>
+
+<form method="post">
+    {% csrf_token %}
+    <button type="submit">🗑️ Eliminar</button>
+    <a href="{% url 'producto_laboral_list' %}">Cancelar</a>
+</form>
+{% endblock %}
+
+
+

@@ -1,0 +1,209 @@
+{% extends 'az.html' %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+
+<style>
+  .tile{
+    border: 0;
+    border-radius: 18px;
+    transition: transform .12s ease, box-shadow .12s ease;
+  }
+  .tile:hover{
+    transform: translateY(-2px);
+    box-shadow: 0 12px 30px rgba(0,0,0,.08);
+  }
+  .tile-icon{
+    width: 46px;
+    height: 46px;
+    border-radius: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,.06);
+    font-size: 22px;
+  }
+</style>
+
+<div class="d-flex flex-wrap justify-content-between align-items-end mb-4">
+  <div>
+    <h2 class="mb-1">Mi Perfil Profesional</h2>
+    <div class="text-muted">Información completa sobre mi formación y experiencia.</div>
+  </div>
+
+  <div class="mt-3 mt-md-0">
+    {% if request.user.is_authenticated and request.user.is_staff %}
+      <span class="badge text-bg-dark">Modo Administrador</span>
+    {% else %}
+      <span class="badge text-bg-secondary">Modo Público</span>
+    {% endif %}
+  </div>
+</div>
+
+<div class="row g-4">
+
+  <!--{# =======================
+     DATOS PERSONALES
+     ======================= #}-->
+  {% if cfg.mostrar_datos_personales %}
+  <div class="col-12 col-md-6 col-lg-4">
+    <div class="card tile shadow-sm">
+      <div class="card-body">
+        <div class="d-flex align-items-center gap-3 mb-3">
+          <div class="tile-icon">👤</div>
+          <div>
+            <h5 class="mb-0">Datos Personales</h5>
+            <small class="text-muted">Información básica del perfil</small>
+          </div>
+        </div>
+        <a href="{% url 'lista_personas' %}" class="btn btn-outline-dark w-100">Ver</a>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!--{# =======================
+     EXPERIENCIA
+     ======================= #}-->
+  {% if cfg.mostrar_experiencia %}
+  <div class="col-12 col-md-6 col-lg-4">
+    <div class="card tile shadow-sm">
+      <div class="card-body">
+        <div class="d-flex align-items-center gap-3 mb-3">
+          <div class="tile-icon">💼</div>
+          <div>
+            <h5 class="mb-0">Experiencia Laboral</h5>
+            <small class="text-muted">Cargos, empresas y certificados</small>
+          </div>
+        </div>
+        <a href="{% url 'experiencia_list' %}" class="btn btn-outline-dark w-100">Ver</a>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!--{# =======================
+     RECONOCIMIENTOS
+     ======================= #}-->
+  {% if cfg.mostrar_reconocimientos %}
+  <div class="col-12 col-md-6 col-lg-4">
+    <div class="card tile shadow-sm">
+      <div class="card-body">
+        <div class="d-flex align-items-center gap-3 mb-3">
+          <div class="tile-icon">🏆</div>
+          <div>
+            <h5 class="mb-0">Reconocimientos</h5>
+            <small class="text-muted">Premios y distinciones</small>
+          </div>
+        </div>
+        <a href="{% url 'reconocimiento_list' %}" class="btn btn-outline-dark w-100">Ver</a>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!--{# =======================
+     CURSOS
+     ======================= #}-->
+  {% if cfg.mostrar_cursos %}
+  <div class="col-12 col-md-6 col-lg-4">
+    <div class="card tile shadow-sm">
+      <div class="card-body">
+        <div class="d-flex align-items-center gap-3 mb-3">
+          <div class="tile-icon">📚</div>
+          <div>
+            <h5 class="mb-0">Cursos Realizados</h5>
+            <small class="text-muted">Capacitación y certificados</small>
+          </div>
+        </div>
+        <a href="{% url 'curso_list' %}" class="btn btn-outline-dark w-100">Ver</a>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!--{# =======================
+     PRODUCTOS ACADÉMICOS
+     ======================= #}-->
+
+  {% if cfg.mostrar_productos_academicos %}
+  <div class="col-12 col-md-6 col-lg-4">
+    <div class="card tile shadow-sm">
+      <div class="card-body">
+        <div class="d-flex align-items-center gap-3 mb-3">
+          <div class="tile-icon">🎓</div>
+          <div>
+            <h5 class="mb-0">Productos Académicos</h5>
+            <small class="text-muted">Recursos y publicaciones</small>
+          </div>
+        </div>
+        <a href="{% url 'productoacademico_list' %}" class="btn btn-outline-dark w-100">Ver</a>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!--{# =======================
+     PRODUCTOS LABORALES
+     ======================= #}-->
+  {% if cfg.mostrar_productos_laborales %}
+  <div class="col-12 col-md-6 col-lg-4">
+    <div class="card tile shadow-sm">
+      <div class="card-body">
+        <div class="d-flex align-items-center gap-3 mb-3">
+          <div class="tile-icon">🛠️</div>
+          <div>
+            <h5 class="mb-0">Productos Laborales</h5>
+            <small class="text-muted">Trabajos y entregables</small>
+          </div>
+        </div>
+        <a href="{% url 'producto_laboral_list' %}" class="btn btn-outline-dark w-100">Ver</a>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!--{# =======================
+     VENTA DE GARAGE
+     ======================= #}-->
+  {% if cfg.mostrar_venta_garage %}
+  <div class="col-12 col-md-6 col-lg-4">
+    <div class="card tile shadow-sm">
+      <div class="card-body">
+        <div class="d-flex align-items-center gap-3 mb-3">
+          <div class="tile-icon">🛒</div>
+          <div>
+            <h5 class="mb-0">Venta de Garage</h5>
+            <small class="text-muted">Artículos disponibles</small>
+          </div>
+        </div>
+        <a href="{% url 'ventagarage_list' %}" class="btn btn-outline-dark w-100">Ver</a>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!--{# =======================
+     PDF DESTACADO
+     ======================= #}-->
+  <div class="col-12">
+    <div class="card tile shadow-sm border-0">
+      <div class="card-body d-flex flex-wrap justify-content-between align-items-center">
+        <div class="d-flex align-items-center gap-3">
+          <div class="tile-icon">📄</div>
+          <div>
+            <h5 class="mb-0">Generar Hoja de Vida</h5>
+            <small class="text-muted">Descargar CV en PDF</small>
+          </div>
+        </div>
+
+        <a href="{% url 'datos_pdf' %}" class="btn btn-success mt-3 mt-md-0">
+          Generar PDF
+        </a>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+{% endblock %}

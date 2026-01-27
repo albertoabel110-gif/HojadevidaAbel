@@ -1,0 +1,77 @@
+{% extends "az.html" %}
+{% block title %}Administrar Secciones{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm border-0">
+  <div class="card-header bg-white d-flex justify-content-between align-items-center">
+    <div>
+      <h3 class="mb-0">Administrar Secciones</h3>
+      <small class="text-muted">Activa o desactiva secciones para el público y el PDF</small>
+    </div>
+    <a href="{% url 'user_dashboard' %}" class="btn btn-outline-dark btn-sm">⬅ Volver</a>
+  </div>
+
+  <div class="card-body">
+    <form method="post">
+      {% csrf_token %}
+
+      <div class="row g-3">
+
+        <div class="col-md-6">
+          <div class="form-check form-switch">
+            {{ form.mostrar_datos_personales }}
+            <label class="form-check-label fw-semibold">Datos Personales</label>
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="form-check form-switch">
+            {{ form.mostrar_experiencia }}
+            <label class="form-check-label fw-semibold">Experiencia Laboral</label>
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="form-check form-switch">
+            {{ form.mostrar_reconocimientos }}
+            <label class="form-check-label fw-semibold">Reconocimientos</label>
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="form-check form-switch">
+            {{ form.mostrar_cursos }}
+            <label class="form-check-label fw-semibold">Cursos</label>
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="form-check form-switch">
+            {{ form.mostrar_productos_academicos }}
+            <label class="form-check-label fw-semibold">Productos Académicos</label>
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="form-check form-switch">
+            {{ form.mostrar_productos_laborales }}
+            <label class="form-check-label fw-semibold">Productos Laborales</label>
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="form-check form-switch">
+            {{ form.mostrar_venta_garage }}
+            <label class="form-check-label fw-semibold">Venta de Garage</label>
+          </div>
+        </div>
+
+      </div>
+
+      <hr class="my-4">
+
+      <button class="btn btn-success">💾 Guardar cambios</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

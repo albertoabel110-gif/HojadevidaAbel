@@ -1,0 +1,17 @@
+{% extends 'az.html' %}
+
+{% block title %}{{ accion }} Producto Laboral{% endblock %}
+
+{% block content %}
+<h1>{{ accion }} Producto Laboral</h1>
+
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+
+    <button type="submit">💾 Guardar</button>
+    <a href="{% url 'producto_laboral_list' %}">Cancelar</a>
+</form>
+{% endblock %}
+
+

@@ -1,0 +1,14 @@
+{% extends 'az.html' %}
+{% block title %} Reconocimiento {% endblock %}
+
+{% block content %}
+<h1>{{ accion }} Reconocimiento</h1>
+
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form.as_p }}
+
+    <button type="submit">💾 Guardar</button>
+    <a href="{% url 'reconocimiento_list' %}">Cancelar</a>
+</form>
+{% endblock %}

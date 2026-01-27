@@ -1,0 +1,241 @@
+{% extends 'az.html' %}
+
+{% block title %}Datos Personales{% endblock %}
+
+{% block content %}
+
+<style>
+  .profile-photo{
+    width: 170px;
+    height: 170px;
+    object-fit: cover;
+    border-radius: 18px;
+  }
+  .info-label{
+    font-size: .85rem;
+    color: #6c757d;
+    margin-bottom: 2px;
+  }
+  .info-value{
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+  .text-truncate-cell{
+    max-width: 320px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+</style>
+
+{# ================= LISTA ================= #}
+{% if vista == "lista" %}
+  <div class="card shadow-sm border-0">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+      <div>
+        <h3 class="mb-0">Datos Personales</h3>
+        <small class="text-muted">Perfiles registrados</small>
+      </div>
+
+      {% if request.user.is_authenticated and request.user.is_staff %}
+        <a href="{% url 'crear_persona' %}" class="btn btn-dark btn-sm">➕ Nuevo Perfil</a>
+      {% endif %}
+    </div>
+
+    <div class="card-body">
+      {% if personas %}
+        <div class="list-group">
+          {% for p in personas %}
+            <div class="list-group-item d-flex justify-content-between align-items-center">
+              <div class="d-flex align-items-center gap-3">
+                {% if p.foto %}
+                  <img src="{{ p.foto.url }}" alt="Foto" width="52" height="52" style="border-radius:14px;object-fit:cover;">
+                {% else %}
+                  <div class="bg-light d-flex align-items-center justify-content-center" style="width:52px;height:52px;border-radius:14px;">
+                    <span class="text-muted">📷</span>
+                  </div>
+                {% endif %}
+
+                <div>
+                  <div class="fw-semibold">{{ p.nombres }} {{ p.apellidos }}</div>
+                  <small class="text-muted text-truncate-cell d-block">
+                    {{ p.nacionalidad }} · {{ p.lugarnacimiento }}
+                  </small>
+                </div>
+              </div>
+
+              <div class="text-nowrap">
+                <a href="{% url 'detalle_persona' p.pk %}" class="btn btn-outline-secondary btn-sm">Ver</a>
+                {% if request.user.is_authenticated and request.user.is_staff %}
+                  <a href="{% url 'editar_persona' p.pk %}" class="btn btn-warning btn-sm">✏️</a>
+                {% endif %}
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="text-center text-muted py-4">
+          No hay perfiles registrados.
+        </div>
+      {% endif %}
+    </div>
+  </div>
+{% endif %}
+
+{# ================= DETALLE ================= #}
+{% if vista == "detalle" %}
+  <div class="card shadow-sm border-0">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+      <div>
+        <h3 class="mb-0">Perfil</h3>
+        <small class="text-muted">Información personal</small>
+      </div>
+
+      <div class="d-flex gap-2">
+        {% if request.user.is_authenticated and request.user.is_staff %}
+          <a href="{% url 'editar_persona' persona.pk %}" class="btn btn-warning btn-sm">✏️ Editar</a>
+        {% endif %}
+        <a href="{% url 'user_dashboard' %}" class="btn btn-outline-secondary btn-sm">Volver</a>
+      </div>
+    </div>
+
+    <div class="card-body">
+      <div class="row g-4">
+        <!-- Columna izquierda: foto y resumen -->
+        <div class="col-12 col-lg-4">
+          <div class="card border-0 bg-light h-100">
+            <div class="card-body text-center">
+              {% if persona.foto %}
+                <img src="{{ persona.foto.url }}" class="profile-photo shadow-sm" alt="Foto de perfil">
+              {% else %}
+                <div class="bg-white shadow-sm d-flex align-items-center justify-content-center mx-auto"
+                     style="width:170px;height:170px;border-radius:18px;">
+                  <span class="text-muted">📷 Sin foto</span>
+                </div>
+              {% endif %}
+
+              <h4 class="mt-3 mb-1">{{ persona.nombres }} {{ persona.apellidos }}</h4>
+              <div class="text-muted">{{ persona.nacionalidad }}</div>
+
+              <div class="mt-3 d-flex justify-content-center gap-2 flex-wrap">
+                {% if persona.perfilactivo %}
+                  <span class="badge text-bg-success">Perfil activo</span>
+                {% endif %}
+                <span class="badge text-bg-dark">{{ persona.get_sexo_display }}</span>
+                <span class="badge text-bg-secondary">{{ persona.estadocivil }}</span>
+              </div>
+
+              {% if request.user.is_authenticated and request.user.is_staff %}
+                <div class="mt-3 text-muted small">
+                  <strong>ID:</strong> {{ persona.idperfil }}
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Columna derecha: datos -->
+        <div class="col-12 col-lg-8">
+          <div class="row g-3">
+            <div class="col-12 col-md-6">
+              <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                  <h6 class="text-uppercase text-muted mb-3">Identidad</h6>
+
+                  <div class="info-label">Cédula</div>
+                  <div class="info-value">{{ persona.numerocedula }}</div>
+
+                  <div class="info-label">Fecha de nacimiento</div>
+                  <div class="info-value">{{ persona.fechanacimiento }}</div>
+
+                  <div class="info-label">Lugar de nacimiento</div>
+                  <div class="info-value">{{ persona.lugarnacimiento }}</div>
+
+                  <div class="info-label">Licencia de conducir</div>
+                  <div class="info-value">{{ persona.licenciaconducir }}</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-12 col-md-6">
+              <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                  <h6 class="text-uppercase text-muted mb-3">Contacto</h6>
+
+                  <div class="info-label">Teléfono convencional</div>
+                  <div class="info-value">{{ persona.telefonoconvencional }}</div>
+
+                  <div class="info-label">Teléfono fijo</div>
+                  <div class="info-value">{{ persona.telefonofijo }}</div>
+
+                  <div class="info-label">Dirección de trabajo</div>
+                  <div class="info-value">{{ persona.direcciontrabajo }}</div>
+
+                  <div class="info-label">Dirección domiciliaria</div>
+                  <div class="info-value">{{ persona.direcciondomiciliaria }}</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-12">
+              <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                  <h6 class="text-uppercase text-muted mb-3">Perfil</h6>
+
+                  <div class="info-label">Descripción del perfil</div>
+                  <div class="info-value">{{ persona.descripcionperfil }}</div>
+
+                  <div class="info-label">Sitio web</div>
+                  <div class="info-value text-truncate-cell" title="{{ persona.sitioweb }}">
+                    {% if persona.sitioweb %}
+                      <a href="{{ persona.sitioweb }}" target="_blank" rel="noopener">
+                        {{ persona.sitioweb }}
+                      </a>
+                    {% else %}
+                      <span class="text-muted">—</span>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endif %}
+
+{# ================= FORMULARIO ================= #}
+{% if vista == "formulario" %}
+  <div class="card shadow-sm border-0">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+      <div>
+        <h3 class="mb-0">Formulario</h3>
+        <small class="text-muted">Completa la información del perfil</small>
+      </div>
+
+      <a href="{% url 'user_dashboard' %}" class="btn btn-outline-secondary btn-sm">Volver</a>
+    </div>
+
+    <div class="card-body">
+      <form method="post" enctype="multipart/form-data" class="row g-3">
+        {% csrf_token %}
+
+        <div class="col-12">
+          {{ form.as_p }}
+        </div>
+
+        <div class="col-12">
+          <button type="submit" class="btn btn-dark">Guardar</button>
+        </div>
+      </form>
+
+      <div class="alert alert-warning mt-3 mb-0">
+        <strong>Nota:</strong> Solo el administrador puede guardar/editar esta información.
+      </div>
+    </div>
+  </div>
+{% endif %}
+
+{% endblock %}

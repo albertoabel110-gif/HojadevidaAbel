@@ -1,0 +1,135 @@
+{% extends 'az.html' %}
+
+{% block title %}Experiencia Laboral{% endblock %}
+
+{% block content %}
+
+<style>
+  /* Corta textos largos para que no rompan la tabla */
+  .text-truncate-cell{
+    max-width: 180px;         /* ajusta a 140/180/220 según te guste */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+</style>
+
+<div class="card shadow-sm border-0">
+  <div class="card-header bg-white d-flex justify-content-between align-items-center">
+    <div>
+      <h3 class="mb-0">Experiencia Laboral</h3>
+      <small class="text-muted">Registro de experiencia laboral</small>
+    </div>
+
+    {% if request.user.is_authenticated and request.user.is_staff %}
+      <a href="{% url 'experiencia_create' %}" class="btn btn-dark btn-sm">➕ Nueva experiencia</a>
+    {% endif %}
+  </div>
+
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-sm table-striped table-hover align-middle mb-0">
+        <thead class="table-dark">
+          <tr>
+            {% if request.user.is_authenticated and request.user.is_staff %}
+              <th class="text-nowrap">ID</th>
+            {% endif %}
+            <th class="text-nowrap">Cargo</th>
+            <th class="text-nowrap">Empresa</th>
+            <th class="text-nowrap">Lugar</th>
+            <th class="text-nowrap">Email</th>
+            <th class="text-nowrap">Sitio Web</th>
+            <th class="text-nowrap">Contacto</th>
+            <th class="text-nowrap">Teléfono</th>
+            <th class="text-nowrap">Inicio</th>
+            <th class="text-nowrap">Fin</th>
+            <th class="text-nowrap">Funciones</th>
+            <th class="text-nowrap">Certificado</th>
+
+            {% if request.user.is_authenticated and request.user.is_staff %}
+              <th class="text-end text-nowrap">Acciones</th>
+            {% endif %}
+          </tr>
+        </thead>
+
+        <tbody>
+          {% for exp in experiencias %}
+          <tr>
+            {% if request.user.is_authenticated and request.user.is_staff %}
+              <td class="text-muted">{{ exp.idexperiencialaboral }}</td>
+            {% endif %}
+
+            <td class="fw-semibold text-nowrap">{{ exp.cargodesempenado }}</td>
+            <td class="text-nowrap">{{ exp.nombrempresa }}</td>
+            <td class="text-nowrap">{{ exp.lugarempresa }}</td>
+
+            <td class="text-truncate-cell" title="{{ exp.emailempresa }}">
+              {{ exp.emailempresa }}
+            </td>
+
+            <td class="text-truncate-cell" title="{{ exp.sitiowebempresa }}">
+              {% if exp.sitiowebempresa %}
+                <a href="{{ exp.sitiowebempresa }}" target="_blank" rel="noopener" class="link-light-emphasis">
+                  {{ exp.sitiowebempresa }}
+                </a>
+              {% else %}
+                <span class="text-muted">—</span>
+              {% endif %}
+            </td>
+
+            <td class="text-truncate-cell" title="{{ exp.nombrecontactoempresarial }}">
+              {{ exp.nombrecontactoempresarial }}
+            </td>
+
+            <td class="text-nowrap">{{ exp.telefonocontactoempresarial }}</td>
+
+            <td class="text-nowrap">{{ exp.fechainiciogestion|date:"d M, Y" }}</td>
+
+            <td class="text-nowrap">
+              {% if exp.fechafingestion %}
+                {{ exp.fechafingestion|date:"d M, Y" }}
+              {% else %}
+                <span class="badge text-bg-success">Actual</span>
+              {% endif %}
+            </td>
+
+            <td class="text-truncate-cell" title="{{ exp.descripcionfunciones }}">
+              {{ exp.descripcionfunciones }}
+            </td>
+
+            <td class="text-nowrap">
+              {% if exp.rutacertificado %}
+                <a class="btn btn-outline-secondary btn-sm" href="{{ exp.rutacertificado.url }}" target="_blank">
+                  Ver
+                </a>
+              {% else %}
+                <span class="badge text-bg-light">Sin archivo</span>
+              {% endif %}
+            </td>
+
+            {% if request.user.is_authenticated and request.user.is_staff %}
+            <td class="text-end text-nowrap">
+              <a href="{% url 'experiencia_update' exp.pk %}" class="btn btn-warning btn-sm">✏️</a>
+              <a href="{% url 'experiencia_delete' exp.pk %}" class="btn btn-danger btn-sm">🗑️</a>
+            </td>
+            {% endif %}
+          </tr>
+
+          {% empty %}
+          <tr>
+            <td colspan="13" class="text-center text-muted py-4">
+              No hay experiencias registradas
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+
+      </table>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+
+

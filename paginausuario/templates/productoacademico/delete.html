@@ -1,0 +1,19 @@
+{% extends 'az.html' %}
+
+{% block title %}Eliminar Producto Académico{% endblock %}
+
+{% block content %}
+<h2>¿Está seguro de eliminar este producto académico?</h2>
+
+<p>
+    <strong>{{ producto.nombrerecurso }}</strong>
+</p>
+
+<form method="post">
+    {% csrf_token %}
+    <button type="submit">🗑️ Eliminar</button>
+    <a href="{% url 'productoacademico_list' %}">Cancelar</a>
+</form>
+{% endblock %}
+
+
