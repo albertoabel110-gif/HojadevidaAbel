@@ -9,29 +9,46 @@ https://docs.djangoproject.com/en/5.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
-
 from pathlib import Path
 import os
 import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# =========================
+# SECURITY / DEBUG
+# =========================
 SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-key-change-me")
-
 DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
 
+# =========================
+# ALLOWED HOSTS
+# =========================
 ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
 
-# Render
 RENDER_EXTERNAL_HOSTNAME = os.environ.get("RENDER_EXTERNAL_HOSTNAME")
 if RENDER_EXTERNAL_HOSTNAME:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
-# Azure App Service
 WEBSITE_HOSTNAME = os.environ.get("WEBSITE_HOSTNAME")
 if WEBSITE_HOSTNAME:
     ALLOWED_HOSTS.append(WEBSITE_HOSTNAME)
 
+# =========================
+# DOTENV (LOCAL ONLY)
+# =========================
+# Solo intenta cargar .env si existe (en Render no existe y no se necesita)
+if os.path.exists(BASE_DIR / ".env"):
+    try:
+        from dotenv import load_dotenv
+        load_dotenv(BASE_DIR / ".env")
+    except Exception:
+        # Si no está python-dotenv instalado, no rompemos local (aunque lo ideal es instalarlo)
+        pass
+
+# =========================
+# APPS
+# =========================
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -42,6 +59,9 @@ INSTALLED_APPS = [
     "paginausuario",
 ]
 
+# =========================
+# MIDDLEWARE
+# =========================
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
@@ -56,24 +76,24 @@ MIDDLEWARE = [
 ROOT_URLCONF = "hojadevida.urls"
 WSGI_APPLICATION = "hojadevida.wsgi.application"
 
-import os
-from pathlib import Path
-from dotenv import load_dotenv
-import dj_database_url
-
-BASE_DIR = Path(__file__).resolve().parent.parent
-
-# Cargar archivo .env
-load_dotenv()
+# =========================
+# DATABASE (POSTGRES ONLY)
+# =========================
+DATABASE_URL = os.environ.get("DATABASE_URL")
+if not DATABASE_URL:
+    raise RuntimeError("DATABASE_URL no está configurada. Configúrala en Render o en tu .env local.")
 
 DATABASES = {
     "default": dj_database_url.parse(
-        os.environ["DATABASE_URL"],
+        DATABASE_URL,
         conn_max_age=600,
-        ssl_require=True  # Si Render requiere SSL (casi siempre sí)
+        ssl_require=True,
     )
 }
 
+# =========================
+# STATIC / MEDIA
+# =========================
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
@@ -81,10 +101,13 @@ STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
+# =========================
+# TEMPLATES
+# =========================
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],  # o [BASE_DIR / "templates"] si usas carpeta templates
+        "DIRS": [],  # o [BASE_DIR / "templates"] si tienes templates globales
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
