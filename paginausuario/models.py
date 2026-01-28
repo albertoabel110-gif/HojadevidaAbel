@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.db import models
 from cloudinary.models import CloudinaryField
+from cloudinary_storage.storage import RawMediaCloudinaryStorage
 
 
 class Task(models.Model):
@@ -139,7 +140,12 @@ class CursoRealizado(models.Model):
     emailempresapatrocinadora = models.CharField(max_length=60)
 
     activarparaqueseveaenfront = models.BooleanField(default=True)
-    rutacertificado = CloudinaryField('certificado', null=True, blank=True)
+    rutacertificado = models.FileField(
+        upload_to="certificados_cursos/",
+        storage=RawMediaCloudinaryStorage(),
+        blank=True,
+        null=True
+        )
 
     class Meta:
         db_table = "CURSOSREALIZADOS"
