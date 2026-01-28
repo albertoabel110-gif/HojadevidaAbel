@@ -164,19 +164,13 @@
                 {% else %}—{% endif %}
               </td>
 
-              {% for c in cursos %}
-                <p><b>{{ c.nombrecurso }}</b></p>
-
+              <td class="text-nowrap col-cert">
                 {% if c.rutacertificado %}
-                  <a href="{{ c.rutacertificado.url }}" target="_blank">Ver certificado</a>
-                  <br>
-                  <iframe src="{{ c.rutacertificado.url }}" width="100%" height="600"></iframe>
+                  <a class="btn btn-outline-secondary btn-sm" href="{{ c.rutacertificado.url }}" target="_blank">Ver</a>
                 {% else %}
-                  <span>Sin certificado</span>
+                  <span class="badge badge-soft">Sin archivo</span>
                 {% endif %}
-
-                <hr>
-              {% endfor %}
+              </td>
 
               {% if request.user.is_authenticated and request.user.is_staff %}
               <td class="text-end text-nowrap col-acciones">
