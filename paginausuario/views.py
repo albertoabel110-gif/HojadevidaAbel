@@ -455,6 +455,21 @@ def certificado_cell(file_field, styles, ancho=150, alto=105):
     return img if img else Paragraph("Certificado no disponible", styles["SmallPro"])
 
 
+
+from datetime import datetime
+
+from django.http import HttpResponse
+
+from reportlab.platypus import (
+    SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
+)
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib import colors
+from reportlab.lib.utils import ImageReader
+
+
+
 def datos_pdf(request):
     cfg = get_cv_config()
 
@@ -562,8 +577,12 @@ def datos_pdf(request):
     # =========================
     elements = []
 
+    ANCHO_UTIL = A4[0] - doc.leftMargin - doc.rightMargin
+    MAX_CERT_W = (ANCHO_UTIL - 155) - 20  # col derecha de kv_table menos paddings
+    MAX_CERT_H = 240                      # ajusta si quieres
+
     def section_bar(title):
-        bar = Table([[title]], colWidths=[A4[0] - doc.leftMargin - doc.rightMargin])
+        bar = Table([[title]], colWidths=[ANCHO_UTIL])
         bar.setStyle(TableStyle([
             ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#EEF2FF")),
             ("TEXTCOLOR", (0, 0), (-1, -1), colors.HexColor("#1D4ED8")),
@@ -579,7 +598,7 @@ def datos_pdf(request):
         elements.append(Spacer(1, 8))
 
     def kv_table(rows):
-        t = Table(rows, colWidths=[155, (A4[0] - doc.leftMargin - doc.rightMargin) - 155])
+        t = Table(rows, colWidths=[155, ANCHO_UTIL - 155])
         t.setStyle(table_style_premium)
         return t
 
@@ -595,8 +614,8 @@ def datos_pdf(request):
         tbl = Table(
             rows,
             colWidths=[
-                (A4[0] - doc.leftMargin - doc.rightMargin - gap) / 2,
-                (A4[0] - doc.leftMargin - doc.rightMargin - gap) / 2
+                (ANCHO_UTIL - gap) / 2,
+                (ANCHO_UTIL - gap) / 2
             ],
             hAlign="LEFT"
         )
@@ -609,12 +628,55 @@ def datos_pdf(request):
         ]))
         return tbl
 
+    def imagen_original_con_limite(filefield, max_w, max_h):
+        """
+        - Usa el tamaño original si cabe.
+        - Si no cabe, reduce proporcionalmente para no salirse.
+        - Si es PDF, muestra texto.
+        - Si no hay path (URL remota), cae a tu preview.
+        """
+        if not filefield:
+            return Paragraph("—", styles["SmallPro"])
+
+        try:
+            path = getattr(filefield, "path", None)
+
+            # Sin path (Cloudinary u otros): fallback a tu preview
+            if not path:
+                return cargar_imagen_o_preview(filefield, ancho=max_w, alto=max_h)
+
+            lower = str(path).lower()
+            if lower.endswith(".pdf"):
+                return Paragraph("📄 Certificado (PDF)", styles["SmallPro"])
+
+            ir = ImageReader(path)
+            iw, ih = ir.getSize()
+
+            img = Image(path)
+            scale = min(max_w / float(iw), max_h / float(ih), 1.0)
+            img.drawWidth = iw * scale
+            img.drawHeight = ih * scale
+            return img
+
+        except Exception:
+            return cargar_imagen_o_preview(filefield, ancho=max_w, alto=max_h)
+
+    def color_estado(estado):
+        e = (estado or "").strip().lower()
+        if "excelente" in e:
+            return colors.HexColor("#ECFDF5")  # verde suave
+        if "bueno" in e:
+            return colors.HexColor("#EFF6FF")  # azul suave
+        if "regular" in e:
+            return colors.HexColor("#FFFBEB")  # amarillo suave
+        return colors.white
+
     # =========================
     # HEADER
     # =========================
     nombre = f"{datos.nombres} {datos.apellidos}"
     subtitulo = "Hoja de Vida Profesional"
-    foto = cargar_imagen_o_preview(datos.foto, ancho=92, alto=92)
+    foto = cargar_imagen_o_preview(datos.foto, ancho=92, alto=92)  # ✅ perfil fijo
 
     contacto_line = " | ".join([
         f"Cédula: {datos.numerocedula}",
@@ -638,7 +700,7 @@ def datos_pdf(request):
     ]))
     elements.append(header_tbl)
 
-    div = Table([[""]], colWidths=[A4[0] - doc.leftMargin - doc.rightMargin])
+    div = Table([[""]], colWidths=[ANCHO_UTIL])
     div.setStyle(TableStyle([("LINEBELOW", (0, 0), (-1, -1), 1, colors.HexColor("#E5E7EB"))]))
     elements.append(div)
 
@@ -666,7 +728,7 @@ def datos_pdf(request):
         elements.append(kv_table(tabla_datos))
 
     # =========================
-    # EXPERIENCIA LABORAL
+    # EXPERIENCIA LABORAL (certificado tamaño original)
     # =========================
     if getattr(cfg, "mostrar_experiencia", True):
         section_bar("EXPERIENCIA LABORAL")
@@ -678,7 +740,8 @@ def datos_pdf(request):
 
         if exps.exists():
             for exp in exps:
-                cert_cell = certificado_cell(getattr(exp, "rutacertificado", None), styles, ancho=150, alto=105)
+                cert_cell = imagen_original_con_limite(getattr(exp, "rutacertificado", None), MAX_CERT_W, MAX_CERT_H)
+
                 tabla = [
                     ["Cargo", exp.cargodesempenado or "—"],
                     ["Empresa", exp.nombrempresa or "—"],
@@ -696,7 +759,7 @@ def datos_pdf(request):
             elements.append(Paragraph("No registra experiencia laboral.", styles["NormalPro"]))
 
     # =========================
-    # RECONOCIMIENTOS
+    # RECONOCIMIENTOS (certificado tamaño original)
     # =========================
     if getattr(cfg, "mostrar_reconocimientos", True):
         section_bar("RECONOCIMIENTOS")
@@ -704,7 +767,8 @@ def datos_pdf(request):
         recs = Reconocimiento.objects.filter(perfil=datos, activarparaqueseveaenfront=True)
         if recs.exists():
             for r in recs:
-                cert_cell = certificado_cell(getattr(r, "rutacertificado", None), styles, ancho=150, alto=105)
+                cert_cell = imagen_original_con_limite(getattr(r, "rutacertificado", None), MAX_CERT_W, MAX_CERT_H)
+
                 tabla = [
                     ["Tipo", r.tiporeconocimiento or "—"],
                     ["Fecha", str(r.fechareconocimiento) if r.fechareconocimiento else "—"],
@@ -719,7 +783,7 @@ def datos_pdf(request):
             elements.append(Paragraph("No registra reconocimientos.", styles["NormalPro"]))
 
     # =========================
-    # CURSOS REALIZADOS
+    # CURSOS REALIZADOS (certificado tamaño original)
     # =========================
     if getattr(cfg, "mostrar_cursos", True):
         section_bar("CURSOS REALIZADOS")
@@ -727,7 +791,8 @@ def datos_pdf(request):
         cursos = CursoRealizado.objects.filter(perfil=datos, activarparaqueseveaenfront=True)
         if cursos.exists():
             for c in cursos:
-                cert_cell = certificado_cell(getattr(c, "rutacertificado", None), styles, ancho=150, alto=105)
+                cert_cell = imagen_original_con_limite(getattr(c, "rutacertificado", None), MAX_CERT_W, MAX_CERT_H)
+
                 tabla = [
                     ["Curso", c.nombrecurso or "—"],
                     ["Inicio", str(c.fechainicio) if c.fechainicio else "—"],
@@ -759,7 +824,7 @@ def datos_pdf(request):
                         [Paragraph(f"<b>Clasificador:</b> {p.clasificador}", styles["SmallPro"])],
                         [Paragraph(f"<b>Descripción:</b> {p.descripcion}", styles["SmallPro"])],
                     ],
-                    colWidths=[(A4[0] - doc.leftMargin - doc.rightMargin - 10) / 2]
+                    colWidths=[(ANCHO_UTIL - 10) / 2]
                 )
                 t.setStyle(TableStyle([
                     ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#D1D5DB")),
@@ -790,7 +855,7 @@ def datos_pdf(request):
                         [Paragraph(f"<b>Fecha:</b> {p.fechaproducto}", styles["SmallPro"])],
                         [Paragraph(f"<b>Descripción:</b> {p.descripcion}", styles["SmallPro"])],
                     ],
-                    colWidths=[(A4[0] - doc.leftMargin - doc.rightMargin - 10) / 2]
+                    colWidths=[(ANCHO_UTIL - 10) / 2]
                 )
                 t.setStyle(TableStyle([
                     ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#D1D5DB")),
@@ -807,42 +872,45 @@ def datos_pdf(request):
             elements.append(Paragraph("No registra productos laborales.", styles["NormalPro"]))
 
     # =========================
-    # VENTA DE GARAGE
+    # VENTA DE GARAGE (más visible + ancho completo + color por estado)
     # =========================
     if getattr(cfg, "mostrar_venta_garage", True):
         section_bar("VENTA DE GARAGE")
 
         ventas = list(VentaGarage.objects.filter(perfil=datos, activarparaqueseveaenfront=True))
         if ventas:
-            def render_venta(v):
-                # Foto del artículo (solo si es imagen)
-                foto_art = cargar_imagen_o_preview(v.articulo, ancho=120, alto=85)
+            for v in ventas:
+                foto_art = cargar_imagen_o_preview(v.articulo, ancho=230, alto=170)
 
                 fecha_pub = getattr(v, "fechapublicacion", None)
                 fecha_pub_txt = str(fecha_pub) if fecha_pub else "—"
 
-                t = Table(
-                    [
-                        [Paragraph(f"<b>Producto:</b> {v.nombreproducto}", styles["SmallPro"])],
-                        [Paragraph(f"<b>Estado:</b> {v.estadoproducto}", styles["SmallPro"])],
-                        [Paragraph(f"<b>Fecha publicación:</b> {fecha_pub_txt}", styles["SmallPro"])],
-                        [Paragraph(f"<b>Valor:</b> ${v.valordelbien}", styles["SmallPro"])],
-                        [Paragraph(f"<b>Descripción:</b> {v.descripcion}", styles["SmallPro"])],
-                        [foto_art if foto_art else Paragraph("<b>Foto:</b> —", styles["SmallPro"])],
-                    ],
-                    colWidths=[(A4[0] - doc.leftMargin - doc.rightMargin - 10) / 2]
-                )
-                t.setStyle(TableStyle([
-                    ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#D1D5DB")),
-                    ("BACKGROUND", (0, 0), (-1, -1), colors.white),
-                    ("LEFTPADDING", (0, 0), (-1, -1), 8),
-                    ("RIGHTPADDING", (0, 0), (-1, -1), 8),
-                    ("TOPPADDING", (0, 0), (-1, -1), 7),
-                    ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
-                ]))
-                return t
+                estado_txt = v.estadoproducto or "—"
+                bg = color_estado(estado_txt)
 
-            elements.append(two_col_blocks(ventas, render_venta))
+                left = foto_art if foto_art else Paragraph("<b>Foto:</b> —", styles["SmallPro"])
+
+                right = [
+                    Paragraph(f"<b>Producto:</b> {v.nombreproducto}", styles["NormalPro"]),
+                    Paragraph(f"<b>Estado:</b> {estado_txt}", styles["NormalPro"]),
+                    Paragraph(f"<b>Fecha publicación:</b> {fecha_pub_txt}", styles["NormalPro"]),
+                    Paragraph(f"<b>Valor:</b> ${v.valordelbien}", styles["NormalPro"]),
+                    Paragraph(f"<b>Descripción:</b> {v.descripcion}", styles["NormalPro"]),
+                ]
+
+                card = Table([[left, right]], colWidths=[250, ANCHO_UTIL - 250])
+                card.setStyle(TableStyle([
+                    ("BOX", (0, 0), (-1, -1), 0.7, colors.HexColor("#D1D5DB")),
+                    ("BACKGROUND", (0, 0), (-1, -1), bg),
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 10),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 10),
+                    ("TOPPADDING", (0, 0), (-1, -1), 10),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 10),
+                ]))
+
+                elements.append(card)
+                elements.append(Spacer(1, 12))
         else:
             elements.append(Paragraph("No hay productos en venta.", styles["NormalPro"]))
 
@@ -851,6 +919,7 @@ def datos_pdf(request):
     # =========================
     doc.build(elements, onFirstPage=draw_footer, onLaterPages=draw_footer)
     return response
+
 
 
 
