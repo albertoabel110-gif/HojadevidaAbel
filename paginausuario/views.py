@@ -11,7 +11,6 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import user_passes_test
-from reportlab.lib.utils import ImageReader
 
 
 from .models import (
@@ -323,77 +322,67 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 
 
-# ==========================================================
-# HELPERS DE IMAGEN (ESCALADO PROPORCIONAL) + CELDAS
-# ==========================================================
-def image_scaled(path_or_file, max_w, max_h, h_align="LEFT"):
+def cargar_imagen_o_preview(file_field, ancho=92, alto=92):
     """
-    Crea un Image de ReportLab escalado para caber en (max_w, max_h) manteniendo proporción.
+    Devuelve un Flowable Image para imágenes (funciona con Cloudinary),
+    y None para PDFs u otros tipos (para no romper ReportLab).
     """
+    if not file_field:
+        return None
+
+    # Si el campo no tiene archivo asociado
     try:
-        img_reader = ImageReader(path_or_file)
-        iw, ih = img_reader.getSize()
-        if not iw or not ih:
-            return None
+        url = file_field.url
+    except Exception:
+        return None
 
-        scale = min(max_w / float(iw), max_h / float(ih))
-        w = iw * scale
-        h = ih * scale
+    if not url:
+        return None
 
-        img = Image(path_or_file, width=w, height=h)
-        img.hAlign = h_align
+    url_lower = url.lower()
+
+    # Si es PDF, NO intentamos renderizar como imagen
+    if url_lower.endswith(".pdf"):
+        return None
+
+    # Descargar imagen desde URL (Cloudinary u otro storage)
+    try:
+        r = requests.get(url, timeout=12)
+        r.raise_for_status()
+        img_bytes = io.BytesIO(r.content)
+        img = Image(img_bytes, width=ancho, height=alto)
+        img.hAlign = "RIGHT"
         return img
     except Exception:
         return None
 
 
-def cargar_imagen_o_preview(filefield, ancho=200, alto=150):
+def certificado_cell(file_field, styles, ancho=150, alto=105):
     """
-    Devuelve imagen escalada si el archivo es una imagen.
-    Si no existe o no es imagen, devuelve None.
+    - Si es PDF: devuelve un link clickeable
+    - Si es imagen: devuelve preview (Image)
+    - Si no existe o falla: '—'
     """
-    if not filefield:
-        return None
+    if not file_field:
+        return "—"
 
-    file_path = getattr(filefield, "path", None) or str(filefield)
-    if not file_path:
-        return None
+    try:
+        url = file_field.url
+    except Exception:
+        return "—"
 
-    ext = os.path.splitext(file_path)[1].lower().replace(".", "")
-    if ext not in ("jpg", "jpeg", "png", "webp"):
-        return None
+    if not url:
+        return "—"
 
-    return image_scaled(file_path, max_w=ancho, max_h=alto)
+    if url.lower().endswith(".pdf"):
+        # Link clickeable dentro del PDF
+        return Paragraph(f'<link href="{url}">Ver certificado (PDF)</link>', styles["SmallPro"])
 
-
-def certificado_cell(ruta, styles, max_w=320, max_h=360):
-    """
-    Certificado grande:
-    - Si es imagen: se imprime lo más grande posible (hasta max_w/max_h).
-    - Si es PDF u otro: muestra texto (sin error).
-    """
-    if not ruta:
-        return Paragraph("—", styles["SmallPro"])
-
-    file_path = getattr(ruta, "path", None) or str(ruta)
-    if not file_path:
-        return Paragraph("—", styles["SmallPro"])
-
-    ext = os.path.splitext(file_path)[1].lower().replace(".", "")
-
-    if ext in ("jpg", "jpeg", "png", "webp"):
-        img = image_scaled(file_path, max_w=max_w, max_h=max_h)
-        return img if img else Paragraph("No se pudo cargar el certificado.", styles["SmallPro"])
-
-    if ext == "pdf":
-        return Paragraph("Certificado adjunto (PDF).", styles["SmallPro"])
-
-    return Paragraph(f"Certificado adjunto ({ext.upper()}).", styles["SmallPro"])
+    # Intentar como imagen
+    img = cargar_imagen_o_preview(file_field, ancho=ancho, alto=alto)
+    return img if img else Paragraph("Certificado no disponible", styles["SmallPro"])
 
 
-# ==========================================================
-# PDF PRINCIPAL
-# ==========================================================
 def datos_pdf(request):
     cfg = get_cv_config()
 
@@ -497,7 +486,7 @@ def datos_pdf(request):
         canvas.restoreState()
 
     # =========================
-    # HELPERS PDF
+    # HELPERS
     # =========================
     elements = []
 
@@ -518,10 +507,7 @@ def datos_pdf(request):
         elements.append(Spacer(1, 8))
 
     def kv_table(rows):
-        t = Table(
-            rows,
-            colWidths=[155, (A4[0] - doc.leftMargin - doc.rightMargin) - 155]
-        )
+        t = Table(rows, colWidths=[155, (A4[0] - doc.leftMargin - doc.rightMargin) - 155])
         t.setStyle(table_style_premium)
         return t
 
@@ -559,9 +545,9 @@ def datos_pdf(request):
     foto = cargar_imagen_o_preview(datos.foto, ancho=92, alto=92)
 
     contacto_line = " | ".join([
-        f"Cédula: {datos.numerocedula}" if getattr(datos, "numerocedula", None) else "Cédula: —",
-        f"Tel: {datos.telefonoconvencional}" if getattr(datos, "telefonoconvencional", None) else "Tel: —",
-        f"Web: {datos.sitioweb}" if getattr(datos, "sitioweb", None) else "Web: —",
+        f"Cédula: {datos.numerocedula}",
+        f"Tel: {datos.telefonoconvencional}",
+        f"Web: {datos.sitioweb}" if datos.sitioweb else "Web: —"
     ])
 
     left_header = [
@@ -592,26 +578,20 @@ def datos_pdf(request):
         tabla_datos = [
             ["Nombres", datos.nombres or "—"],
             ["Apellidos", datos.apellidos or "—"],
-            ["Nacionalidad", getattr(datos, "nacionalidad", None) or "—"],
-            ["Lugar de nacimiento", getattr(datos, "lugarnacimiento", None) or "—"],
-            ["Fecha de nacimiento", str(getattr(datos, "fechanacimiento", "")) if getattr(datos, "fechanacimiento", None) else "—"],
-            ["Cédula", getattr(datos, "numerocedula", None) or "—"],
+            ["Nacionalidad", datos.nacionalidad or "—"],
+            ["Lugar de nacimiento", datos.lugarnacimiento or "—"],
+            ["Fecha de nacimiento", str(datos.fechanacimiento) if datos.fechanacimiento else "—"],
+            ["Cédula", datos.numerocedula or "—"],
             ["Sexo", datos.get_sexo_display() if hasattr(datos, "get_sexo_display") else "—"],
-            ["Estado civil", getattr(datos, "estadocivil", None) or "—"],
-            ["Licencia de conducir", getattr(datos, "licenciaconducir", None) or "—"],
-            ["Teléfono", getattr(datos, "telefonoconvencional", None) or "—"],
-            ["Teléfono fijo", getattr(datos, "telefonofijo", None) or "—"],
-            ["Dirección domiciliaria", getattr(datos, "direcciondomiciliaria", None) or "—"],
-            ["Dirección trabajo", getattr(datos, "direcciontrabajo", None) or "—"],
-            ["Sitio web", getattr(datos, "sitioweb", None) or "—"],
+            ["Estado civil", datos.estadocivil or "—"],
+            ["Licencia de conducir", datos.licenciaconducir or "—"],
+            ["Teléfono", datos.telefonoconvencional or "—"],
+            ["Teléfono fijo", getattr(datos, "telefonofijo", "—") or "—"],
+            ["Dirección domiciliaria", datos.direcciondomiciliaria or "—"],
+            ["Dirección trabajo", datos.direcciontrabajo or "—"],
+            ["Sitio web", datos.sitioweb or "—"],
         ]
         elements.append(kv_table(tabla_datos))
-
-    # =========================
-    # ANCHO REAL PARA CERTIFICADOS (columna derecha)
-    # =========================
-    available_width = (A4[0] - doc.leftMargin - doc.rightMargin)
-    value_width = available_width - 155  # ancho de la columna derecha del kv_table
 
     # =========================
     # EXPERIENCIA LABORAL
@@ -626,22 +606,16 @@ def datos_pdf(request):
 
         if exps.exists():
             for exp in exps:
-                cert_cell = certificado_cell(
-                    getattr(exp, "rutacertificado", None),
-                    styles,
-                    max_w=value_width,  # ✅ grande (usa ancho real)
-                    max_h=360           # ✅ más alto
-                )
-
+                cert_cell = certificado_cell(getattr(exp, "rutacertificado", None), styles, ancho=150, alto=105)
                 tabla = [
-                    ["Cargo", getattr(exp, "cargodesempenado", None) or "—"],
-                    ["Empresa", getattr(exp, "nombrempresa", None) or "—"],
-                    ["Lugar", getattr(exp, "lugarempresa", None) or "—"],
-                    ["Email", getattr(exp, "emailempresa", None) or "—"],
-                    ["Sitio web", getattr(exp, "sitiowebempresa", None) or "—"],
-                    ["Contacto", f"{getattr(exp, 'nombrecontactoempresarial', '—')} - {getattr(exp, 'telefonocontactoempresarial', '—')}"],
-                    ["Periodo", f"{getattr(exp, 'fechainiciogestion', '—')} - {getattr(exp, 'fechafingestion', None) or 'Actual'}"],
-                    ["Funciones", Paragraph(getattr(exp, "descripcionfunciones", None) or "—", styles["NormalPro"])],
+                    ["Cargo", exp.cargodesempenado or "—"],
+                    ["Empresa", exp.nombrempresa or "—"],
+                    ["Lugar", exp.lugarempresa or "—"],
+                    ["Email", exp.emailempresa or "—"],
+                    ["Sitio web", exp.sitiowebempresa or "—"],
+                    ["Contacto", f"{exp.nombrecontactoempresarial} - {exp.telefonocontactoempresarial}"],
+                    ["Periodo", f"{exp.fechainiciogestion} - {exp.fechafingestion if exp.fechafingestion else 'Actual'}"],
+                    ["Funciones", Paragraph(exp.descripcionfunciones or "—", styles["NormalPro"])],
                     ["Certificado", cert_cell],
                 ]
                 elements.append(kv_table(tabla))
@@ -658,19 +632,13 @@ def datos_pdf(request):
         recs = Reconocimiento.objects.filter(perfil=datos, activarparaqueseveaenfront=True)
         if recs.exists():
             for r in recs:
-                cert_cell = certificado_cell(
-                    getattr(r, "rutacertificado", None),
-                    styles,
-                    max_w=value_width,
-                    max_h=360
-                )
-
+                cert_cell = certificado_cell(getattr(r, "rutacertificado", None), styles, ancho=1240, alto=1755)
                 tabla = [
-                    ["Tipo", getattr(r, "tiporeconocimiento", None) or "—"],
-                    ["Fecha", str(getattr(r, "fechareconocimiento", "")) if getattr(r, "fechareconocimiento", None) else "—"],
-                    ["Descripción", Paragraph(getattr(r, "descripcionreconocimiento", None) or "—", styles["NormalPro"])],
-                    ["Entidad", getattr(r, "entidadpatrocinadora", None) or "—"],
-                    ["Contacto", f"{getattr(r, 'nombrecontactoauspicia', '—')} - {getattr(r, 'telefonocontactoauspicia', '—')}"],
+                    ["Tipo", r.tiporeconocimiento or "—"],
+                    ["Fecha", str(r.fechareconocimiento) if r.fechareconocimiento else "—"],
+                    ["Descripción", Paragraph(r.descripcionreconocimiento or "—", styles["NormalPro"])],
+                    ["Entidad", r.entidadpatrocinadora or "—"],
+                    ["Contacto", f"{r.nombrecontactoauspicia} - {r.telefonocontactoauspicia}"],
                     ["Certificado", cert_cell],
                 ]
                 elements.append(kv_table(tabla))
@@ -687,22 +655,16 @@ def datos_pdf(request):
         cursos = CursoRealizado.objects.filter(perfil=datos, activarparaqueseveaenfront=True)
         if cursos.exists():
             for c in cursos:
-                cert_cell = certificado_cell(
-                    getattr(c, "rutacertificado", None),
-                    styles,
-                    max_w=value_width,
-                    max_h=360
-                )
-
+                cert_cell = certificado_cell(getattr(c, "rutacertificado", None), styles, ancho=1240, alto=1755)
                 tabla = [
-                    ["Curso", getattr(c, "nombrecurso", None) or "—"],
-                    ["Inicio", str(getattr(c, "fechainicio", "")) if getattr(c, "fechainicio", None) else "—"],
-                    ["Fin", str(getattr(c, "fechafin", "")) if getattr(c, "fechafin", None) else "—"],
-                    ["Horas", str(getattr(c, "totalhoras", "")) if getattr(c, "totalhoras", None) is not None else "—"],
-                    ["Descripción", Paragraph(getattr(c, "descripcioncurso", None) or "—", styles["NormalPro"])],
-                    ["Entidad", getattr(c, "entidadpatrocinadora", None) or "—"],
-                    ["Contacto", f"{getattr(c, 'nombrecontactoauspicia', '—')} - {getattr(c, 'telefonocontactoauspicia', '—')}"],
-                    ["Email", getattr(c, "emailempresapatrocinadora", None) or "—"],
+                    ["Curso", c.nombrecurso or "—"],
+                    ["Inicio", str(c.fechainicio) if c.fechainicio else "—"],
+                    ["Fin", str(c.fechafin) if c.fechafin else "—"],
+                    ["Horas", str(c.totalhoras) if c.totalhoras is not None else "—"],
+                    ["Descripción", Paragraph(c.descripcioncurso or "—", styles["NormalPro"])],
+                    ["Entidad", c.entidadpatrocinadora or "—"],
+                    ["Contacto", f"{c.nombrecontactoauspicia} - {c.telefonocontactoauspicia}"],
+                    ["Email", c.emailempresapatrocinadora or "—"],
                     ["Certificado", cert_cell],
                 ]
                 elements.append(kv_table(tabla))
@@ -719,14 +681,13 @@ def datos_pdf(request):
         pacad = list(ProductoAcademico.objects.filter(perfil=datos, activarparaqueseveaenfront=True))
         if pacad:
             def render_pacad(p):
-                block_w = (A4[0] - doc.leftMargin - doc.rightMargin - 10) / 2
                 t = Table(
                     [
-                        [Paragraph(f"<b>Recurso:</b> {getattr(p, 'nombrerecurso', '')}", styles["SmallPro"])],
-                        [Paragraph(f"<b>Clasificador:</b> {getattr(p, 'clasificador', '')}", styles["SmallPro"])],
-                        [Paragraph(f"<b>Descripción:</b> {getattr(p, 'descripcion', '')}", styles["SmallPro"])],
+                        [Paragraph(f"<b>Recurso:</b> {p.nombrerecurso}", styles["SmallPro"])],
+                        [Paragraph(f"<b>Clasificador:</b> {p.clasificador}", styles["SmallPro"])],
+                        [Paragraph(f"<b>Descripción:</b> {p.descripcion}", styles["SmallPro"])],
                     ],
-                    colWidths=[block_w]
+                    colWidths=[(A4[0] - doc.leftMargin - doc.rightMargin - 10) / 2]
                 )
                 t.setStyle(TableStyle([
                     ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#D1D5DB")),
@@ -751,14 +712,13 @@ def datos_pdf(request):
         plab = list(ProductoLaboral.objects.filter(perfil=datos, activarparaqueseveaenfront=True))
         if plab:
             def render_plab(p):
-                block_w = (A4[0] - doc.leftMargin - doc.rightMargin - 10) / 2
                 t = Table(
                     [
-                        [Paragraph(f"<b>Producto:</b> {getattr(p, 'nombreproducto', '')}", styles["SmallPro"])],
-                        [Paragraph(f"<b>Fecha:</b> {getattr(p, 'fechaproducto', '')}", styles["SmallPro"])],
-                        [Paragraph(f"<b>Descripción:</b> {getattr(p, 'descripcion', '')}", styles["SmallPro"])],
+                        [Paragraph(f"<b>Producto:</b> {p.nombreproducto}", styles["SmallPro"])],
+                        [Paragraph(f"<b>Fecha:</b> {p.fechaproducto}", styles["SmallPro"])],
+                        [Paragraph(f"<b>Descripción:</b> {p.descripcion}", styles["SmallPro"])],
                     ],
-                    colWidths=[block_w]
+                    colWidths=[(A4[0] - doc.leftMargin - doc.rightMargin - 10) / 2]
                 )
                 t.setStyle(TableStyle([
                     ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#D1D5DB")),
@@ -775,7 +735,7 @@ def datos_pdf(request):
             elements.append(Paragraph("No registra productos laborales.", styles["NormalPro"]))
 
     # =========================
-    # VENTA DE GARAGE (IMÁGENES MÁS GRANDES)
+    # VENTA DE GARAGE
     # =========================
     if getattr(cfg, "mostrar_venta_garage", True):
         section_bar("VENTA DE GARAGE")
@@ -783,30 +743,23 @@ def datos_pdf(request):
         ventas = list(VentaGarage.objects.filter(perfil=datos, activarparaqueseveaenfront=True))
         if ventas:
             def render_venta(v):
-                block_w = (A4[0] - doc.leftMargin - doc.rightMargin - 10) / 2
-
-                # ✅ Solo imágenes, y MÁS GRANDES
-                foto_art = cargar_imagen_o_preview(
-                    getattr(v, "articulo", None),
-                    ancho=block_w - 16,
-                    alto=170
-                )
+                # Foto del artículo (solo si es imagen)
+                foto_art = cargar_imagen_o_preview(v.articulo, ancho=418, alto=500)
 
                 fecha_pub = getattr(v, "fechapublicacion", None)
                 fecha_pub_txt = str(fecha_pub) if fecha_pub else "—"
 
                 t = Table(
                     [
-                        [Paragraph(f"<b>Producto:</b> {getattr(v, 'nombreproducto', '')}", styles["SmallPro"])],
-                        [Paragraph(f"<b>Estado:</b> {getattr(v, 'estadoproducto', '')}", styles["SmallPro"])],
+                        [Paragraph(f"<b>Producto:</b> {v.nombreproducto}", styles["SmallPro"])],
+                        [Paragraph(f"<b>Estado:</b> {v.estadoproducto}", styles["SmallPro"])],
                         [Paragraph(f"<b>Fecha publicación:</b> {fecha_pub_txt}", styles["SmallPro"])],
-                        [Paragraph(f"<b>Valor:</b> ${getattr(v, 'valordelbien', '')}", styles["SmallPro"])],
-                        [Paragraph(f"<b>Descripción:</b> {getattr(v, 'descripcion', '')}", styles["SmallPro"])],
+                        [Paragraph(f"<b>Valor:</b> ${v.valordelbien}", styles["SmallPro"])],
+                        [Paragraph(f"<b>Descripción:</b> {v.descripcion}", styles["SmallPro"])],
                         [foto_art if foto_art else Paragraph("<b>Foto:</b> —", styles["SmallPro"])],
                     ],
-                    colWidths=[block_w]
+                    colWidths=[(A4[0] - doc.leftMargin - doc.rightMargin - 10) / 2]
                 )
-
                 t.setStyle(TableStyle([
                     ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#D1D5DB")),
                     ("BACKGROUND", (0, 0), (-1, -1), colors.white),
@@ -814,10 +767,6 @@ def datos_pdf(request):
                     ("RIGHTPADDING", (0, 0), (-1, -1), 8),
                     ("TOPPADDING", (0, 0), (-1, -1), 7),
                     ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
-
-                    # Más aire en la fila de la imagen
-                    ("TOPPADDING", (0, 5), (-1, 5), 10),
-                    ("BOTTOMPADDING", (0, 5), (-1, 5), 10),
                 ]))
                 return t
 
