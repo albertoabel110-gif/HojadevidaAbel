@@ -674,7 +674,7 @@ def datos_pdf(request):
         elements.append(bar)
         elements.append(Spacer(1, 6))
 
-        img = imagen_con_limite(filefield, max_w=ANCHO_UTIL, max_h=900)
+        img = imagen_con_limite(filefield, max_w=ANCHO_UTIL, max_h=700)
         if not img:
             elements.append(Paragraph("—", styles["NormalPro"]))
             elements.append(Spacer(1, 12))
