@@ -55,10 +55,12 @@ INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
+    "django.contrib.staticfiles",
+
+    "cloudinary",
+    "cloudinary_storage",
+
     "paginausuario",
-    'cloudinary_storage',
-    'django.contrib.staticfiles',
-    'cloudinary',
 ]
 
 # =========================
@@ -122,14 +124,14 @@ TEMPLATES = [
     },
 ]
 
-
 import cloudinary
 
 cloudinary.config(
-    cloud_name=os.environ.get("dglsedhdi"),
-    api_key=os.environ.get("931178633149148"),
-    api_secret=os.environ.get("7ZyGg6GqrYmFGOR-BeytHFRvt3U"),
-    secure=True
+    cloud_name = "dglsedhdi",
+    api_key = "931178633149148",
+    api_secret = "7ZyGg6GqrYmFGOR-BeytHFRvt3U",
+    secure = True
 )
+
 
 
