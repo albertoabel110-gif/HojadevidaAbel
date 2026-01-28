@@ -311,17 +311,83 @@ def cargar_imagen_o_preview(campo, ancho=160, alto=160):
     return img
 
 
+import io
+import requests
 from datetime import datetime
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Table, TableStyle, Spacer
+
+from django.http import HttpResponse
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
-from django.http import HttpResponse
+
+
+def cargar_imagen_o_preview(file_field, ancho=92, alto=92):
+    """
+    Devuelve un Flowable Image para imágenes (funciona con Cloudinary),
+    y None para PDFs u otros tipos (para no romper ReportLab).
+    """
+    if not file_field:
+        return None
+
+    # Si el campo no tiene archivo asociado
+    try:
+        url = file_field.url
+    except Exception:
+        return None
+
+    if not url:
+        return None
+
+    url_lower = url.lower()
+
+    # Si es PDF, NO intentamos renderizar como imagen
+    if url_lower.endswith(".pdf"):
+        return None
+
+    # Descargar imagen desde URL (Cloudinary u otro storage)
+    try:
+        r = requests.get(url, timeout=12)
+        r.raise_for_status()
+        img_bytes = io.BytesIO(r.content)
+        img = Image(img_bytes, width=ancho, height=alto)
+        img.hAlign = "RIGHT"
+        return img
+    except Exception:
+        return None
+
+
+def certificado_cell(file_field, styles, ancho=150, alto=105):
+    """
+    - Si es PDF: devuelve un link clickeable
+    - Si es imagen: devuelve preview (Image)
+    - Si no existe o falla: '—'
+    """
+    if not file_field:
+        return "—"
+
+    try:
+        url = file_field.url
+    except Exception:
+        return "—"
+
+    if not url:
+        return "—"
+
+    if url.lower().endswith(".pdf"):
+        # Link clickeable dentro del PDF
+        return Paragraph(f'<link href="{url}">Ver certificado (PDF)</link>', styles["SmallPro"])
+
+    # Intentar como imagen
+    img = cargar_imagen_o_preview(file_field, ancho=ancho, alto=alto)
+    return img if img else Paragraph("Certificado no disponible", styles["SmallPro"])
+
 
 def datos_pdf(request):
     cfg = get_cv_config()
 
-    datos = DatosPersonales.objects.filter(perfilactivo=1).first()
+    # ✅ más robusto si perfilactivo es BooleanField
+    datos = DatosPersonales.objects.filter(perfilactivo=True).first()
     if not datos:
         return HttpResponse("No hay datos para generar el PDF")
 
@@ -342,39 +408,43 @@ def datos_pdf(request):
     # =========================
     # ESTILOS PREMIUM
     # =========================
-    styles.add(ParagraphStyle(
-        name="NameTitle",
-        fontSize=22,
-        leading=26,
-        fontName="Helvetica-Bold",
-        textColor=colors.HexColor("#111827"),
-        spaceAfter=2,
-    ))
+    if "NameTitle" not in styles:
+        styles.add(ParagraphStyle(
+            name="NameTitle",
+            fontSize=22,
+            leading=26,
+            fontName="Helvetica-Bold",
+            textColor=colors.HexColor("#111827"),
+            spaceAfter=2,
+        ))
 
-    styles.add(ParagraphStyle(
-        name="SubHeader",
-        fontSize=10.5,
-        leading=14,
-        fontName="Helvetica",
-        textColor=colors.HexColor("#6B7280"),
-        spaceAfter=8,
-    ))
+    if "SubHeader" not in styles:
+        styles.add(ParagraphStyle(
+            name="SubHeader",
+            fontSize=10.5,
+            leading=14,
+            fontName="Helvetica",
+            textColor=colors.HexColor("#6B7280"),
+            spaceAfter=8,
+        ))
 
-    styles.add(ParagraphStyle(
-        name="NormalPro",
-        fontSize=10.3,
-        leading=13.2,
-        fontName="Helvetica",
-        textColor=colors.HexColor("#1F2937"),
-    ))
+    if "NormalPro" not in styles:
+        styles.add(ParagraphStyle(
+            name="NormalPro",
+            fontSize=10.3,
+            leading=13.2,
+            fontName="Helvetica",
+            textColor=colors.HexColor("#1F2937"),
+        ))
 
-    styles.add(ParagraphStyle(
-        name="SmallPro",
-        fontSize=9.2,
-        leading=12.0,
-        fontName="Helvetica",
-        textColor=colors.HexColor("#374151"),
-    ))
+    if "SmallPro" not in styles:
+        styles.add(ParagraphStyle(
+            name="SmallPro",
+            fontSize=9.2,
+            leading=12.0,
+            fontName="Helvetica",
+            textColor=colors.HexColor("#374151"),
+        ))
 
     table_style_premium = TableStyle([
         ("BACKGROUND", (0, 0), (0, -1), colors.HexColor("#F3F4F6")),
@@ -392,7 +462,7 @@ def datos_pdf(request):
     ])
 
     # =========================
-    # FOOTER + PAGINAS
+    # FOOTER
     # =========================
     generated_at = datetime.now().strftime("%d/%m/%Y %H:%M")
 
@@ -497,30 +567,28 @@ def datos_pdf(request):
     elements.append(header_tbl)
 
     div = Table([[""]], colWidths=[A4[0] - doc.leftMargin - doc.rightMargin])
-    div.setStyle(TableStyle([
-        ("LINEBELOW", (0, 0), (-1, -1), 1, colors.HexColor("#E5E7EB")),
-    ]))
+    div.setStyle(TableStyle([("LINEBELOW", (0, 0), (-1, -1), 1, colors.HexColor("#E5E7EB"))]))
     elements.append(div)
 
     # =========================
     # DATOS PERSONALES
     # =========================
-    if cfg.mostrar_datos_personales:
+    if getattr(cfg, "mostrar_datos_personales", True):
         section_bar("DATOS PERSONALES")
         tabla_datos = [
-            ["Nombres", datos.nombres],
-            ["Apellidos", datos.apellidos],
-            ["Nacionalidad", datos.nacionalidad],
-            ["Lugar de nacimiento", datos.lugarnacimiento],
-            ["Fecha de nacimiento", str(datos.fechanacimiento)],
-            ["Cédula", datos.numerocedula],
-            ["Sexo", datos.get_sexo_display()],
-            ["Estado civil", datos.estadocivil],
-            ["Licencia de conducir", datos.licenciaconducir],
-            ["Teléfono", datos.telefonoconvencional],
+            ["Nombres", datos.nombres or "—"],
+            ["Apellidos", datos.apellidos or "—"],
+            ["Nacionalidad", datos.nacionalidad or "—"],
+            ["Lugar de nacimiento", datos.lugarnacimiento or "—"],
+            ["Fecha de nacimiento", str(datos.fechanacimiento) if datos.fechanacimiento else "—"],
+            ["Cédula", datos.numerocedula or "—"],
+            ["Sexo", datos.get_sexo_display() if hasattr(datos, "get_sexo_display") else "—"],
+            ["Estado civil", datos.estadocivil or "—"],
+            ["Licencia de conducir", datos.licenciaconducir or "—"],
+            ["Teléfono", datos.telefonoconvencional or "—"],
             ["Teléfono fijo", getattr(datos, "telefonofijo", "—") or "—"],
-            ["Dirección domiciliaria", datos.direcciondomiciliaria],
-            ["Dirección trabajo", datos.direcciontrabajo],
+            ["Dirección domiciliaria", datos.direcciondomiciliaria or "—"],
+            ["Dirección trabajo", datos.direcciontrabajo or "—"],
             ["Sitio web", datos.sitioweb or "—"],
         ]
         elements.append(kv_table(tabla_datos))
@@ -528,7 +596,7 @@ def datos_pdf(request):
     # =========================
     # EXPERIENCIA LABORAL
     # =========================
-    if cfg.mostrar_experiencia:
+    if getattr(cfg, "mostrar_experiencia", True):
         section_bar("EXPERIENCIA LABORAL")
 
         exps = ExperienciaLaboral.objects.filter(
@@ -538,17 +606,17 @@ def datos_pdf(request):
 
         if exps.exists():
             for exp in exps:
-                cert = cargar_imagen_o_preview(getattr(exp, "rutacertificado", None), ancho=150, alto=105)
+                cert_cell = certificado_cell(getattr(exp, "rutacertificado", None), styles, ancho=150, alto=105)
                 tabla = [
-                    ["Cargo", exp.cargodesempenado],
-                    ["Empresa", exp.nombrempresa],
-                    ["Lugar", exp.lugarempresa],
-                    ["Email", exp.emailempresa],
-                    ["Sitio web", exp.sitiowebempresa],
+                    ["Cargo", exp.cargodesempenado or "—"],
+                    ["Empresa", exp.nombrempresa or "—"],
+                    ["Lugar", exp.lugarempresa or "—"],
+                    ["Email", exp.emailempresa or "—"],
+                    ["Sitio web", exp.sitiowebempresa or "—"],
                     ["Contacto", f"{exp.nombrecontactoempresarial} - {exp.telefonocontactoempresarial}"],
                     ["Periodo", f"{exp.fechainiciogestion} - {exp.fechafingestion if exp.fechafingestion else 'Actual'}"],
-                    ["Funciones", Paragraph(exp.descripcionfunciones, styles["NormalPro"])],
-                    ["Certificado", cert if cert else "—"],
+                    ["Funciones", Paragraph(exp.descripcionfunciones or "—", styles["NormalPro"])],
+                    ["Certificado", cert_cell],
                 ]
                 elements.append(kv_table(tabla))
                 elements.append(Spacer(1, 10))
@@ -558,24 +626,20 @@ def datos_pdf(request):
     # =========================
     # RECONOCIMIENTOS
     # =========================
-    if cfg.mostrar_reconocimientos:
+    if getattr(cfg, "mostrar_reconocimientos", True):
         section_bar("RECONOCIMIENTOS")
 
-        recs = Reconocimiento.objects.filter(
-            perfil=datos,
-            activarparaqueseveaenfront=True
-        )
+        recs = Reconocimiento.objects.filter(perfil=datos, activarparaqueseveaenfront=True)
         if recs.exists():
             for r in recs:
-                # ✅ FIX: usar r (no exp)
-                cert = cargar_imagen_o_preview(getattr(r, "rutacertificado", None), ancho=150, alto=105)
+                cert_cell = certificado_cell(getattr(r, "rutacertificado", None), styles, ancho=150, alto=105)
                 tabla = [
-                    ["Tipo", r.tiporeconocimiento],
-                    ["Fecha", str(r.fechareconocimiento)],
-                    ["Descripción", Paragraph(r.descripcionreconocimiento, styles["NormalPro"])],
-                    ["Entidad", r.entidadpatrocinadora],
+                    ["Tipo", r.tiporeconocimiento or "—"],
+                    ["Fecha", str(r.fechareconocimiento) if r.fechareconocimiento else "—"],
+                    ["Descripción", Paragraph(r.descripcionreconocimiento or "—", styles["NormalPro"])],
+                    ["Entidad", r.entidadpatrocinadora or "—"],
                     ["Contacto", f"{r.nombrecontactoauspicia} - {r.telefonocontactoauspicia}"],
-                    ["Certificado", cert if cert else "—"],
+                    ["Certificado", cert_cell],
                 ]
                 elements.append(kv_table(tabla))
                 elements.append(Spacer(1, 10))
@@ -585,27 +649,23 @@ def datos_pdf(request):
     # =========================
     # CURSOS REALIZADOS
     # =========================
-    if cfg.mostrar_cursos:
+    if getattr(cfg, "mostrar_cursos", True):
         section_bar("CURSOS REALIZADOS")
 
-        cursos = CursoRealizado.objects.filter(
-            perfil=datos,
-            activarparaqueseveaenfront=True
-        )
+        cursos = CursoRealizado.objects.filter(perfil=datos, activarparaqueseveaenfront=True)
         if cursos.exists():
             for c in cursos:
-                # ✅ FIX: usar c (no exp)
-                cert = cargar_imagen_o_preview(getattr(c, "rutacertificado", None), ancho=150, alto=105)
+                cert_cell = certificado_cell(getattr(c, "rutacertificado", None), styles, ancho=150, alto=105)
                 tabla = [
-                    ["Curso", c.nombrecurso],
-                    ["Inicio", str(c.fechainicio)],
-                    ["Fin", str(c.fechafin)],
-                    ["Horas", c.totalhoras],
-                    ["Descripción", Paragraph(c.descripcioncurso, styles["NormalPro"])],
-                    ["Entidad", c.entidadpatrocinadora],
+                    ["Curso", c.nombrecurso or "—"],
+                    ["Inicio", str(c.fechainicio) if c.fechainicio else "—"],
+                    ["Fin", str(c.fechafin) if c.fechafin else "—"],
+                    ["Horas", str(c.totalhoras) if c.totalhoras is not None else "—"],
+                    ["Descripción", Paragraph(c.descripcioncurso or "—", styles["NormalPro"])],
+                    ["Entidad", c.entidadpatrocinadora or "—"],
                     ["Contacto", f"{c.nombrecontactoauspicia} - {c.telefonocontactoauspicia}"],
-                    ["Email", c.emailempresapatrocinadora],
-                    ["Certificado", cert if cert else "—"],
+                    ["Email", c.emailempresapatrocinadora or "—"],
+                    ["Certificado", cert_cell],
                 ]
                 elements.append(kv_table(tabla))
                 elements.append(Spacer(1, 10))
@@ -615,7 +675,7 @@ def datos_pdf(request):
     # =========================
     # PRODUCTOS ACADÉMICOS
     # =========================
-    if cfg.mostrar_productos_academicos:
+    if getattr(cfg, "mostrar_productos_academicos", True):
         section_bar("PRODUCTOS ACADÉMICOS")
 
         pacad = list(ProductoAcademico.objects.filter(perfil=datos, activarparaqueseveaenfront=True))
@@ -646,7 +706,7 @@ def datos_pdf(request):
     # =========================
     # PRODUCTOS LABORALES
     # =========================
-    if cfg.mostrar_productos_laborales:
+    if getattr(cfg, "mostrar_productos_laborales", True):
         section_bar("PRODUCTOS LABORALES")
 
         plab = list(ProductoLaboral.objects.filter(perfil=datos, activarparaqueseveaenfront=True))
@@ -677,12 +737,13 @@ def datos_pdf(request):
     # =========================
     # VENTA DE GARAGE
     # =========================
-    if cfg.mostrar_venta_garage:
+    if getattr(cfg, "mostrar_venta_garage", True):
         section_bar("VENTA DE GARAGE")
 
         ventas = list(VentaGarage.objects.filter(perfil=datos, activarparaqueseveaenfront=True))
         if ventas:
             def render_venta(v):
+                # Foto del artículo (solo si es imagen)
                 foto_art = cargar_imagen_o_preview(v.articulo, ancho=120, alto=85)
 
                 fecha_pub = getattr(v, "fechapublicacion", None)
