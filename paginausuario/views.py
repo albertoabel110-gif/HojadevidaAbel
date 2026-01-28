@@ -11,6 +11,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import user_passes_test
+from reportlab.lib.utils import ImageReader
 
 
 from .models import (
@@ -320,7 +321,7 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
-from reportlab.lib.utils import ImageReader
+
 
 # ==========================================================
 # HELPERS DE IMAGEN (ESCALADO PROPORCIONAL) + CELDAS
@@ -831,6 +832,57 @@ def datos_pdf(request):
     return response
 
 
+
+##EXPERIENCIA LABORAL
+
+from .models import ExperienciaLaboral
+from .forms import ExperienciaLaboralForm
+
+def experiencia_list(request):
+    cfg = get_cv_config()
+
+    # Público: bloqueado si apagado
+    if not cfg.mostrar_experiencia and not request.user.is_staff:
+        return render(request, "bloqueado.html", {"mensaje": "Experiencia Laboral está deshabilitada por el administrador."})
+
+    # Mostrar solo activos para público, pero admin ve todo
+    if request.user.is_staff:
+        experiencias = ExperienciaLaboral.objects.all()
+    else:
+        experiencias = ExperienciaLaboral.objects.filter(activarparaqueseveaenfront=True)
+
+    return render(request, 'experiencia/list.html', {'experiencias': experiencias, "cfg": cfg})
+
+
+
+@staff_member_required
+def experiencia_create(request):
+    form = ExperienciaLaboralForm(request.POST or None)
+    if form.is_valid():
+        form.save()
+        return redirect('experiencia_list')
+    return render(request, 'experiencia/form.html', {'form': form})
+
+
+@staff_member_required
+def experiencia_update(request, pk):
+    experiencia = get_object_or_404(ExperienciaLaboral, pk=pk)
+
+    if request.method == "POST":
+        form = ExperienciaLaboralForm(
+            request.POST,
+            request.FILES,
+            instance=experiencia
+        )
+
+        if form.is_valid():
+            form.save()
+            return redirect('experiencia_list')
+
+    else:
+        form = ExperienciaLaboralForm(instance=experiencia)
+
+    return render(request, 'experiencia/form.html', {'form': form})
 
 
 @staff_member_required
