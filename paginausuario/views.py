@@ -457,7 +457,6 @@ def certificado_cell(file_field, styles, ancho=150, alto=105):
 
 
 from datetime import datetime
-
 from django.http import HttpResponse
 
 from reportlab.platypus import (
@@ -467,7 +466,6 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 from reportlab.lib.utils import ImageReader
-
 
 
 def datos_pdf(request):
@@ -576,10 +574,7 @@ def datos_pdf(request):
     # HELPERS
     # =========================
     elements = []
-
     ANCHO_UTIL = A4[0] - doc.leftMargin - doc.rightMargin
-    MAX_CERT_W = (ANCHO_UTIL - 155) - 20  # col derecha de kv_table menos paddings
-    MAX_CERT_H = 240                      # ajusta si quieres
 
     def section_bar(title):
         bar = Table([[title]], colWidths=[ANCHO_UTIL])
@@ -613,10 +608,7 @@ def datos_pdf(request):
 
         tbl = Table(
             rows,
-            colWidths=[
-                (ANCHO_UTIL - gap) / 2,
-                (ANCHO_UTIL - gap) / 2
-            ],
+            colWidths=[(ANCHO_UTIL - gap) / 2, (ANCHO_UTIL - gap) / 2],
             hAlign="LEFT"
         )
         tbl.setStyle(TableStyle([
@@ -628,26 +620,24 @@ def datos_pdf(request):
         ]))
         return tbl
 
-    def imagen_original_con_limite(filefield, max_w, max_h):
+    def imagen_con_limite(filefield, max_w, max_h):
         """
-        - Usa el tamaño original si cabe.
-        - Si no cabe, reduce proporcionalmente para no salirse.
-        - Si es PDF, muestra texto.
-        - Si no hay path (URL remota), cae a tu preview.
+        - Mantiene proporción.
+        - Reduce SOLO si no cabe.
+        - Si no hay .path (cloud/URL), cae a cargar_imagen_o_preview.
+        - Si es PDF, muestra etiqueta.
         """
         if not filefield:
-            return Paragraph("—", styles["SmallPro"])
+            return None
 
         try:
             path = getattr(filefield, "path", None)
 
-            # Sin path (Cloudinary u otros): fallback a tu preview
             if not path:
                 return cargar_imagen_o_preview(filefield, ancho=max_w, alto=max_h)
 
-            lower = str(path).lower()
-            if lower.endswith(".pdf"):
-                return Paragraph("📄 Certificado (PDF)", styles["SmallPro"])
+            if str(path).lower().endswith(".pdf"):
+                return Paragraph("📄 Certificado (PDF adjunto)", styles["SmallPro"])
 
             ir = ImageReader(path)
             iw, ih = ir.getSize()
@@ -661,14 +651,57 @@ def datos_pdf(request):
         except Exception:
             return cargar_imagen_o_preview(filefield, ancho=max_w, alto=max_h)
 
+    def certificado_fullwidth(filefield):
+        """
+        Certificado grande a ancho completo con barra superior 'CERTIFICADO'
+        """
+        if not filefield:
+            return
+
+        elements.append(Spacer(1, 8))
+
+        bar = Table([["CERTIFICADO"]], colWidths=[ANCHO_UTIL])
+        bar.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#F3F4F6")),
+            ("TEXTCOLOR", (0, 0), (-1, -1), colors.HexColor("#111827")),
+            ("FONTNAME", (0, 0), (-1, -1), "Helvetica-Bold"),
+            ("FONTSIZE", (0, 0), (-1, -1), 11),
+            ("LEFTPADDING", (0, 0), (-1, -1), 10),
+            ("TOPPADDING", (0, 0), (-1, -1), 6),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+            ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#D1D5DB")),
+        ]))
+        elements.append(bar)
+        elements.append(Spacer(1, 6))
+
+        img = imagen_con_limite(filefield, max_w=ANCHO_UTIL, max_h=700)
+        if not img:
+            elements.append(Paragraph("—", styles["NormalPro"]))
+            elements.append(Spacer(1, 12))
+            return
+
+        card = Table([[img]], colWidths=[ANCHO_UTIL])
+        card.setStyle(TableStyle([
+            ("BOX", (0, 0), (-1, -1), 0.6, colors.HexColor("#D1D5DB")),
+            ("BACKGROUND", (0, 0), (-1, -1), colors.white),
+            ("LEFTPADDING", (0, 0), (-1, -1), 10),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 10),
+            ("TOPPADDING", (0, 0), (-1, -1), 10),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 10),
+            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ]))
+        elements.append(card)
+        elements.append(Spacer(1, 14))
+
     def color_estado(estado):
         e = (estado or "").strip().lower()
         if "excelente" in e:
-            return colors.HexColor("#ECFDF5")  # verde suave
+            return colors.HexColor("#ECFDF5")
         if "bueno" in e:
-            return colors.HexColor("#EFF6FF")  # azul suave
+            return colors.HexColor("#EFF6FF")
         if "regular" in e:
-            return colors.HexColor("#FFFBEB")  # amarillo suave
+            return colors.HexColor("#FFFBEB")
         return colors.white
 
     # =========================
@@ -728,7 +761,7 @@ def datos_pdf(request):
         elements.append(kv_table(tabla_datos))
 
     # =========================
-    # EXPERIENCIA LABORAL (certificado tamaño original)
+    # EXPERIENCIA LABORAL (certificado grande)
     # =========================
     if getattr(cfg, "mostrar_experiencia", True):
         section_bar("EXPERIENCIA LABORAL")
@@ -740,8 +773,6 @@ def datos_pdf(request):
 
         if exps.exists():
             for exp in exps:
-                cert_cell = imagen_original_con_limite(getattr(exp, "rutacertificado", None), MAX_CERT_W, MAX_CERT_H)
-
                 tabla = [
                     ["Cargo", exp.cargodesempenado or "—"],
                     ["Empresa", exp.nombrempresa or "—"],
@@ -751,15 +782,14 @@ def datos_pdf(request):
                     ["Contacto", f"{exp.nombrecontactoempresarial} - {exp.telefonocontactoempresarial}"],
                     ["Periodo", f"{exp.fechainiciogestion} - {exp.fechafingestion if exp.fechafingestion else 'Actual'}"],
                     ["Funciones", Paragraph(exp.descripcionfunciones or "—", styles["NormalPro"])],
-                    ["Certificado", cert_cell],
                 ]
                 elements.append(kv_table(tabla))
-                elements.append(Spacer(1, 10))
+                certificado_fullwidth(getattr(exp, "rutacertificado", None))
         else:
             elements.append(Paragraph("No registra experiencia laboral.", styles["NormalPro"]))
 
     # =========================
-    # RECONOCIMIENTOS (certificado tamaño original)
+    # RECONOCIMIENTOS (certificado grande)
     # =========================
     if getattr(cfg, "mostrar_reconocimientos", True):
         section_bar("RECONOCIMIENTOS")
@@ -767,23 +797,20 @@ def datos_pdf(request):
         recs = Reconocimiento.objects.filter(perfil=datos, activarparaqueseveaenfront=True)
         if recs.exists():
             for r in recs:
-                cert_cell = imagen_original_con_limite(getattr(r, "rutacertificado", None), MAX_CERT_W, MAX_CERT_H)
-
                 tabla = [
                     ["Tipo", r.tiporeconocimiento or "—"],
                     ["Fecha", str(r.fechareconocimiento) if r.fechareconocimiento else "—"],
                     ["Descripción", Paragraph(r.descripcionreconocimiento or "—", styles["NormalPro"])],
                     ["Entidad", r.entidadpatrocinadora or "—"],
                     ["Contacto", f"{r.nombrecontactoauspicia} - {r.telefonocontactoauspicia}"],
-                    ["Certificado", cert_cell],
                 ]
                 elements.append(kv_table(tabla))
-                elements.append(Spacer(1, 10))
+                certificado_fullwidth(getattr(r, "rutacertificado", None))
         else:
             elements.append(Paragraph("No registra reconocimientos.", styles["NormalPro"]))
 
     # =========================
-    # CURSOS REALIZADOS (certificado tamaño original)
+    # CURSOS REALIZADOS (certificado grande)
     # =========================
     if getattr(cfg, "mostrar_cursos", True):
         section_bar("CURSOS REALIZADOS")
@@ -791,8 +818,6 @@ def datos_pdf(request):
         cursos = CursoRealizado.objects.filter(perfil=datos, activarparaqueseveaenfront=True)
         if cursos.exists():
             for c in cursos:
-                cert_cell = imagen_original_con_limite(getattr(c, "rutacertificado", None), MAX_CERT_W, MAX_CERT_H)
-
                 tabla = [
                     ["Curso", c.nombrecurso or "—"],
                     ["Inicio", str(c.fechainicio) if c.fechainicio else "—"],
@@ -802,10 +827,9 @@ def datos_pdf(request):
                     ["Entidad", c.entidadpatrocinadora or "—"],
                     ["Contacto", f"{c.nombrecontactoauspicia} - {c.telefonocontactoauspicia}"],
                     ["Email", c.emailempresapatrocinadora or "—"],
-                    ["Certificado", cert_cell],
                 ]
                 elements.append(kv_table(tabla))
-                elements.append(Spacer(1, 10))
+                certificado_fullwidth(getattr(c, "rutacertificado", None))
         else:
             elements.append(Paragraph("No registra cursos.", styles["NormalPro"]))
 
@@ -872,7 +896,7 @@ def datos_pdf(request):
             elements.append(Paragraph("No registra productos laborales.", styles["NormalPro"]))
 
     # =========================
-    # VENTA DE GARAGE (más visible + ancho completo + color por estado)
+    # VENTA DE GARAGE (más visible)
     # =========================
     if getattr(cfg, "mostrar_venta_garage", True):
         section_bar("VENTA DE GARAGE")
