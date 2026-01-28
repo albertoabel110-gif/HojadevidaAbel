@@ -129,10 +129,9 @@ TEMPLATES = [
 import os
 
 CLOUDINARY_STORAGE = {
-    "CLOUD_NAME": os.environ.get("dglsedhdi"),
-    "API_KEY": os.environ.get("931178633149148"),
-    "API_SECRET": os.environ.get("7ZyGg6GqrYmFGOR-BeytHFRvt3U"),
+    "CLOUD_NAME": os.environ.get("CLOUDINARY_CLOUD_NAME"),
+    "API_KEY": os.environ.get("CLOUDINARY_API_KEY"),
+    "API_SECRET": os.environ.get("CLOUDINARY_API_SECRET"),
 }
 
 DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
-
