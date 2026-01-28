@@ -103,7 +103,7 @@ STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
-DEFAULT_FILE_STORAGE1 = 'cloudinary_storage.storage.RawMediaCloudinaryStorage'
+
 # =========================
 # TEMPLATES
 # =========================
@@ -122,14 +122,14 @@ TEMPLATES = [
     },
 ]
 
+
 import cloudinary
 
 cloudinary.config(
-    cloud_name = "dglsedhdi",
-    api_key = "931178633149148",
-    api_secret = "7ZyGg6GqrYmFGOR-BeytHFRvt3U",
-    secure = True
+    cloud_name=os.environ.get("dglsedhdi"),
+    api_key=os.environ.get("931178633149148"),
+    api_secret=os.environ.get("7ZyGg6GqrYmFGOR-BeytHFRvt3U"),
+    secure=True
 )
-
 
 
