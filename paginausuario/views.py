@@ -461,7 +461,7 @@ from django.http import HttpResponse
 
 from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
-    )
+)
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
@@ -620,14 +620,12 @@ def datos_pdf(request):
         ]))
         return tbl
 
-    import os
-
     def imagen_con_limite(filefield, max_w, max_h):
         """
         - Mantiene proporción.
         - Reduce SOLO si no cabe.
-        - Si no hay .path o el archivo no existe (Render / storage remoto) => usa cargar_imagen_o_preview.
-        - Si es PDF => texto.
+        - Si no hay .path (cloud/URL), cae a cargar_imagen_o_preview.
+        - Si es PDF, muestra etiqueta.
         """
         if not filefield:
             return None
@@ -635,19 +633,12 @@ def datos_pdf(request):
         try:
             path = getattr(filefield, "path", None)
 
-            # Si no hay path => Cloudinary / URL => preview
             if not path:
                 return cargar_imagen_o_preview(filefield, ancho=max_w, alto=max_h)
 
-            # Si el archivo NO existe en disco (muy común en Render) => preview
-            if not os.path.exists(path):
-                return cargar_imagen_o_preview(filefield, ancho=max_w, alto=max_h)
-
-            # PDF => etiqueta
             if str(path).lower().endswith(".pdf"):
                 return Paragraph("📄 Certificado (PDF adjunto)", styles["SmallPro"])
 
-            # Imagen => tamaño real con límite
             ir = ImageReader(path)
             iw, ih = ir.getSize()
 
@@ -659,7 +650,6 @@ def datos_pdf(request):
 
         except Exception:
             return cargar_imagen_o_preview(filefield, ancho=max_w, alto=max_h)
-
 
     def certificado_fullwidth(filefield):
         """
@@ -684,7 +674,7 @@ def datos_pdf(request):
         elements.append(bar)
         elements.append(Spacer(1, 6))
 
-        img = imagen_con_limite(filefield, max_w=ANCHO_UTIL, max_h=700)
+        img = imagen_con_limite(filefield, max_w=ANCHO_UTIL, max_h=900)
         if not img:
             elements.append(Paragraph("—", styles["NormalPro"]))
             elements.append(Spacer(1, 12))
