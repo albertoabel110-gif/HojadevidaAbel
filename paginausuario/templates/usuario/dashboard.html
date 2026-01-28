@@ -13,30 +13,45 @@
     transform: translateY(-2px);
     box-shadow: 0 12px 30px rgba(0,0,0,.08);
   }
-  .tile-icon{
-    width: 46px;
-    height: 46px;
-    border-radius: 14px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(0,0,0,.06);
-    font-size: 22px;
+
+  /* --- Tarjeta Premium --- */
+  .premium-card {
+    border-radius: 22px;
+    overflow: hidden;
+    background: linear-gradient(145deg, #ffffff, #f5f5f5);
+    border: 2px solid rgba(0, 0, 0, 0.06);
+    transition: transform .15s ease, box-shadow .15s ease;
   }
-  .intro-card{
-    border-radius: 18px;
+
+  .premium-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 18px 40px rgba(0,0,0,.12);
   }
-  .intro-label{
-    font-size: .82rem;
-    letter-spacing: .04em;
-    text-transform: uppercase;
+
+  /* --- Foto de perfil premium --- */
+  .profile-photo {
+    width: 140px;
+    height: 140px;
+    border-radius: 20px;
+    object-fit: cover;
+    box-shadow: 0 8px 18px rgba(0,0,0,.15);
+    border: 3px solid white;
+  }
+
+  /* --- Lista premium --- */
+  .premium-list .list-group-item {
+    background: transparent;
+    border: 0;
+    padding-left: 0;
+    font-size: 15px;
+    color: #333;
   }
 </style>
 
-<div class="d-flex flex-wrap justify-content-between align-items-end mb-3">
+<div class="d-flex flex-wrap justify-content-between align-items-end mb-4">
   <div>
     <h2 class="mb-1">Mi Perfil Profesional</h2>
-    <div class="text-muted">Consulta y administra tu información personal, formación y experiencia.</div>
+    <div class="text-muted">Información completa sobre mi formación y experiencia.</div>
   </div>
 
   <div class="mt-3 mt-md-0">
@@ -48,69 +63,42 @@
   </div>
 </div>
 
-<div class="card intro-card shadow-sm border-0 mb-4 tile">
-  <div class="card-body">
-    <div class="row g-3 align-items-center">
-      <div class="col-12 col-lg-8">
-        <div class="d-flex align-items-start gap-3">
-          <div class="tile-icon">👤</div>
-          <div>
-            <div class="intro-label text-muted mb-1">Datos personales</div>
-
-            {% if datos %}
-              <h5 class="mb-1">{{ datos.nombres }} {{ datos.apellidos }}</h5>
-              <div class="text-muted">
-                {% if datos.numerocedula %}Cédula: {{ datos.numerocedula }}{% else %}Cédula: —{% endif %}
-                &nbsp;•&nbsp;
-                {% if datos.telefonoconvencional %}Tel: {{ datos.telefonoconvencional }}{% else %}Tel: —{% endif %}
-                &nbsp;•&nbsp;
-                {% if datos.sitioweb %}Web: {{ datos.sitioweb }}{% else %}Web: —{% endif %}
-              </div>
-              <div class="mt-2 text-muted">
-                Mantén tu perfil actualizado y genera tu hoja de vida en PDF cuando lo necesites.
-              </div>
-            {% else %}
-              <h5 class="mb-1">Completa tu perfil</h5>
-              <div class="text-muted">
-                Agrega tus datos personales y tu información profesional para generar tu hoja de vida.
-              </div>
-            {% endif %}
-          </div>
-        </div>
-      </div>
-
-      <div class="col-12 col-lg-4">
-        <div class="d-flex flex-wrap gap-2 justify-content-lg-end">
-          <a href="{% url 'secciones_admin' %}" class="btn btn-warning btn-sm">Secciones</a>
-          <a href="{% url 'datos_pdf' %}" class="btn btn-success">Generar PDF</a>
-          {% if cfg.mostrar_datos_personales %}
-            <a href="{% url 'lista_personas' %}" class="btn btn-outline-dark">Ver Datos Personales</a>
-          {% endif %}
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
 <div class="row g-4">
 
-  {% if cfg.mostrar_datos_personales %}
+  <!-- =======================
+       DATOS PERSONALES (PREMIUM)
+     ======================= -->
+  {% if cfg.mostrar_datos_personales and datos %}
   <div class="col-12 col-md-6 col-lg-4">
-    <div class="card tile shadow-sm">
-      <div class="card-body">
-        <div class="d-flex align-items-center gap-3 mb-3">
-          <div class="tile-icon">👤</div>
-          <div>
-            <h5 class="mb-0">Datos Personales</h5>
-            <small class="text-muted">Información básica del perfil</small>
-          </div>
-        </div>
-        <a href="{% url 'lista_personas' %}" class="btn btn-outline-dark w-100">Ver</a>
+    <div class="card premium-card shadow-lg">
+      <div class="card-body text-center">
+
+        {% if datos.foto %}
+          <img src="{{ datos.foto.url }}" class="profile-photo" alt="Foto de perfil">
+        {% else %}
+          <img src="https://via.placeholder.com/140" class="profile-photo" alt="Sin foto">
+        {% endif %}
+
+        <h4 class="mt-3 mb-1 fw-bold">{{ datos.nombre_completo }}</h4>
+
+        <span class="badge bg-light text-dark px-3 py-2 mb-3">
+          {{ datos.nacionalidad }}
+        </span>
+
+        <ul class="list-group list-group-flush text-start premium-list">
+          <li class="list-group-item"><strong>Cédula:</strong> {{ datos.cedula }}</li>
+          <li class="list-group-item"><strong>Teléfono:</strong> {{ datos.telefono }}</li>
+          <li class="list-group-item"><strong>Licencia:</strong> {{ datos.licencia_conducir }}</li>
+        </ul>
+
       </div>
     </div>
   </div>
   {% endif %}
 
+  <!-- =======================
+       EXPERIENCIA
+     ======================= -->
   {% if cfg.mostrar_experiencia %}
   <div class="col-12 col-md-6 col-lg-4">
     <div class="card tile shadow-sm">
@@ -128,6 +116,9 @@
   </div>
   {% endif %}
 
+  <!-- =======================
+       RECONOCIMIENTOS
+     ======================= -->
   {% if cfg.mostrar_reconocimientos %}
   <div class="col-12 col-md-6 col-lg-4">
     <div class="card tile shadow-sm">
@@ -145,6 +136,9 @@
   </div>
   {% endif %}
 
+  <!-- =======================
+       CURSOS
+     ======================= -->
   {% if cfg.mostrar_cursos %}
   <div class="col-12 col-md-6 col-lg-4">
     <div class="card tile shadow-sm">
@@ -162,6 +156,9 @@
   </div>
   {% endif %}
 
+  <!-- =======================
+       PRODUCTOS ACADÉMICOS
+     ======================= -->
   {% if cfg.mostrar_productos_academicos %}
   <div class="col-12 col-md-6 col-lg-4">
     <div class="card tile shadow-sm">
@@ -179,6 +176,9 @@
   </div>
   {% endif %}
 
+  <!-- =======================
+       PRODUCTOS LABORALES
+     ======================= -->
   {% if cfg.mostrar_productos_laborales %}
   <div class="col-12 col-md-6 col-lg-4">
     <div class="card tile shadow-sm">
@@ -196,6 +196,9 @@
   </div>
   {% endif %}
 
+  <!-- =======================
+       VENTA DE GARAGE
+     ======================= -->
   {% if cfg.mostrar_venta_garage %}
   <div class="col-12 col-md-6 col-lg-4">
     <div class="card tile shadow-sm">
@@ -212,6 +215,25 @@
     </div>
   </div>
   {% endif %}
+
+  <!-- =======================
+       GENERAR PDF
+     ======================= -->
+  <div class="col-12">
+    <div class="card tile shadow-sm border-0">
+      <div class="card-body d-flex flex-wrap justify-content-between align-items-center">
+        <div class="d-flex align-items-center gap-3">
+          <div class="tile-icon">📄</div>
+          <div>
+            <h5 class="mb-0">Generar Hoja de Vida</h5>
+            <small class="text-muted">Descargar CV en PDF</small>
+          </div>
+        </div>
+        <a href="{% url 'secciones_admin' %}" class="btn btn-warning btn-sm">Secciones</a>
+        <a href="{% url 'datos_pdf' %}" class="btn btn-success mt-3 mt-md-0">Generar PDF</a>
+      </div>
+    </div>
+  </div>
 
 </div>
 
