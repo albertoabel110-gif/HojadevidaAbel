@@ -124,21 +124,14 @@ TEMPLATES = [
     },
 ]
 
-import cloudinary
 
-cloudinary.config(
-    cloud_name = "dglsedhdi",
-    api_key = "931178633149148",
-    api_secret = "7ZyGg6GqrYmFGOR-BeytHFRvt3U",
-    secure = True
-)
 
 import os
 
 CLOUDINARY_STORAGE = {
-    "CLOUD_NAME": os.environ.get("CLOUDINARY_dglsedhdi"),
-    "API_KEY": os.environ.get("CLOUDINARY_931178633149148"),
-    "API_SECRET": os.environ.get("CLOUDINARY_7ZyGg6GqrYmFGOR-BeytHFRvt3U"),
+    "CLOUD_NAME": os.environ.get("dglsedhdi"),
+    "API_KEY": os.environ.get("931178633149148"),
+    "API_SECRET": os.environ.get("7ZyGg6GqrYmFGOR-BeytHFRvt3U"),
 }
 
 DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
