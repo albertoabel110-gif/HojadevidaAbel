@@ -383,6 +383,78 @@ def certificado_cell(file_field, styles, ancho=150, alto=105):
     return img if img else Paragraph("Certificado no disponible", styles["SmallPro"])
 
 
+import io
+import requests
+from datetime import datetime
+
+from django.http import HttpResponse
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib import colors
+
+
+def cargar_imagen_o_preview(file_field, ancho=92, alto=92):
+    """
+    Devuelve un Flowable Image para imágenes (funciona con Cloudinary),
+    y None para PDFs u otros tipos (para no romper ReportLab).
+    """
+    if not file_field:
+        return None
+
+    # Si el campo no tiene archivo asociado
+    try:
+        url = file_field.url
+    except Exception:
+        return None
+
+    if not url:
+        return None
+
+    url_lower = url.lower()
+
+    # Si es PDF, NO intentamos renderizar como imagen
+    if url_lower.endswith(".pdf"):
+        return None
+
+    # Descargar imagen desde URL (Cloudinary u otro storage)
+    try:
+        r = requests.get(url, timeout=12)
+        r.raise_for_status()
+        img_bytes = io.BytesIO(r.content)
+        img = Image(img_bytes, width=ancho, height=alto)
+        img.hAlign = "RIGHT"
+        return img
+    except Exception:
+        return None
+
+
+def certificado_cell(file_field, styles, ancho=150, alto=105):
+    """
+    - Si es PDF: devuelve un link clickeable
+    - Si es imagen: devuelve preview (Image)
+    - Si no existe o falla: '—'
+    """
+    if not file_field:
+        return "—"
+
+    try:
+        url = file_field.url
+    except Exception:
+        return "—"
+
+    if not url:
+        return "—"
+
+    if url.lower().endswith(".pdf"):
+        # Link clickeable dentro del PDF
+        return Paragraph(f'<link href="{url}">Ver certificado (PDF)</link>', styles["SmallPro"])
+
+    # Intentar como imagen
+    img = cargar_imagen_o_preview(file_field, ancho=ancho, alto=alto)
+    return img if img else Paragraph("Certificado no disponible", styles["SmallPro"])
+
+
 def datos_pdf(request):
     cfg = get_cv_config()
 
@@ -632,7 +704,7 @@ def datos_pdf(request):
         recs = Reconocimiento.objects.filter(perfil=datos, activarparaqueseveaenfront=True)
         if recs.exists():
             for r in recs:
-                cert_cell = certificado_cell(getattr(r, "rutacertificado", None), styles, ancho=1240, alto=1755)
+                cert_cell = certificado_cell(getattr(r, "rutacertificado", None), styles, ancho=150, alto=105)
                 tabla = [
                     ["Tipo", r.tiporeconocimiento or "—"],
                     ["Fecha", str(r.fechareconocimiento) if r.fechareconocimiento else "—"],
@@ -655,7 +727,7 @@ def datos_pdf(request):
         cursos = CursoRealizado.objects.filter(perfil=datos, activarparaqueseveaenfront=True)
         if cursos.exists():
             for c in cursos:
-                cert_cell = certificado_cell(getattr(c, "rutacertificado", None), styles, ancho=1240, alto=1755)
+                cert_cell = certificado_cell(getattr(c, "rutacertificado", None), styles, ancho=150, alto=105)
                 tabla = [
                     ["Curso", c.nombrecurso or "—"],
                     ["Inicio", str(c.fechainicio) if c.fechainicio else "—"],
@@ -744,7 +816,7 @@ def datos_pdf(request):
         if ventas:
             def render_venta(v):
                 # Foto del artículo (solo si es imagen)
-                foto_art = cargar_imagen_o_preview(v.articulo, ancho=418, alto=500)
+                foto_art = cargar_imagen_o_preview(v.articulo, ancho=120, alto=85)
 
                 fecha_pub = getattr(v, "fechapublicacion", None)
                 fecha_pub_txt = str(fecha_pub) if fecha_pub else "—"
@@ -779,6 +851,7 @@ def datos_pdf(request):
     # =========================
     doc.build(elements, onFirstPage=draw_footer, onLaterPages=draw_footer)
     return response
+
 
 
 
