@@ -455,7 +455,6 @@ def certificado_cell(file_field, styles, ancho=150, alto=105):
     return img if img else Paragraph("Certificado no disponible", styles["SmallPro"])
 
 
-
 from datetime import datetime
 from django.http import HttpResponse
 
@@ -622,7 +621,7 @@ def datos_pdf(request):
 
     def imagen_con_limite(filefield, max_w, max_h):
         """
-        - Mantiene proporción.
+        - Mantiene tamaño original.
         - Reduce SOLO si no cabe.
         - Si no hay .path (cloud/URL), cae a cargar_imagen_o_preview.
         - Si es PDF, muestra etiqueta.
@@ -643,6 +642,7 @@ def datos_pdf(request):
             iw, ih = ir.getSize()
 
             img = Image(path)
+            # Mantener tamaño original y reducir solo si no cabe
             scale = min(max_w / float(iw), max_h / float(ih), 1.0)
             img.drawWidth = iw * scale
             img.drawHeight = ih * scale
@@ -653,25 +653,17 @@ def datos_pdf(request):
 
     def certificado_fullwidth(filefield):
         """
-        Certificado grande a ancho completo con barra superior 'CERTIFICADO'
+        Certificado sin cuadro (sin borde).
+        Muestra arriba 'CERTIFICADO' y luego la imagen al tamaño original
+        (solo reduce si no cabe en la página).
         """
         if not filefield:
             return
 
-        elements.append(Spacer(1, 8))
+        elements.append(Spacer(1, 10))
 
-        bar = Table([["CERTIFICADO"]], colWidths=[ANCHO_UTIL])
-        bar.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#F3F4F6")),
-            ("TEXTCOLOR", (0, 0), (-1, -1), colors.HexColor("#111827")),
-            ("FONTNAME", (0, 0), (-1, -1), "Helvetica-Bold"),
-            ("FONTSIZE", (0, 0), (-1, -1), 11),
-            ("LEFTPADDING", (0, 0), (-1, -1), 10),
-            ("TOPPADDING", (0, 0), (-1, -1), 6),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
-            ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#D1D5DB")),
-        ]))
-        elements.append(bar)
+        # Título arriba (sin cuadro)
+        elements.append(Paragraph("<b>CERTIFICADO</b>", styles["SubHeader"]))
         elements.append(Spacer(1, 6))
 
         img = imagen_con_limite(filefield, max_w=ANCHO_UTIL, max_h=700)
@@ -680,18 +672,18 @@ def datos_pdf(request):
             elements.append(Spacer(1, 12))
             return
 
-        card = Table([[img]], colWidths=[ANCHO_UTIL])
-        card.setStyle(TableStyle([
-            ("BOX", (0, 0), (-1, -1), 0.6, colors.HexColor("#D1D5DB")),
-            ("BACKGROUND", (0, 0), (-1, -1), colors.white),
-            ("LEFTPADDING", (0, 0), (-1, -1), 10),
-            ("RIGHTPADDING", (0, 0), (-1, -1), 10),
-            ("TOPPADDING", (0, 0), (-1, -1), 10),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 10),
+        # Centrar sin borde usando una tabla “invisible”
+        wrapper = Table([[img]], colWidths=[ANCHO_UTIL], hAlign="LEFT")
+        wrapper.setStyle(TableStyle([
             ("ALIGN", (0, 0), (-1, -1), "CENTER"),
             ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ("LEFTPADDING", (0, 0), (-1, -1), 0),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+            ("TOPPADDING", (0, 0), (-1, -1), 0),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+            # SIN BOX / SIN GRID / SIN BACKGROUND
         ]))
-        elements.append(card)
+        elements.append(wrapper)
         elements.append(Spacer(1, 14))
 
     def color_estado(estado):
@@ -761,7 +753,7 @@ def datos_pdf(request):
         elements.append(kv_table(tabla_datos))
 
     # =========================
-    # EXPERIENCIA LABORAL (certificado grande)
+    # EXPERIENCIA LABORAL (certificado sin cuadro)
     # =========================
     if getattr(cfg, "mostrar_experiencia", True):
         section_bar("EXPERIENCIA LABORAL")
@@ -789,7 +781,7 @@ def datos_pdf(request):
             elements.append(Paragraph("No registra experiencia laboral.", styles["NormalPro"]))
 
     # =========================
-    # RECONOCIMIENTOS (certificado grande)
+    # RECONOCIMIENTOS (certificado sin cuadro)
     # =========================
     if getattr(cfg, "mostrar_reconocimientos", True):
         section_bar("RECONOCIMIENTOS")
@@ -810,7 +802,7 @@ def datos_pdf(request):
             elements.append(Paragraph("No registra reconocimientos.", styles["NormalPro"]))
 
     # =========================
-    # CURSOS REALIZADOS (certificado grande)
+    # CURSOS REALIZADOS (certificado sin cuadro)
     # =========================
     if getattr(cfg, "mostrar_cursos", True):
         section_bar("CURSOS REALIZADOS")
@@ -943,7 +935,6 @@ def datos_pdf(request):
     # =========================
     doc.build(elements, onFirstPage=draw_footer, onLaterPages=draw_footer)
     return response
-
 
 
 
