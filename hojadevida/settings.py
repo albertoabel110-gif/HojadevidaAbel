@@ -34,16 +34,19 @@ WEBSITE_HOSTNAME = os.environ.get("WEBSITE_HOSTNAME")
 if WEBSITE_HOSTNAME:
     ALLOWED_HOSTS.append(WEBSITE_HOSTNAME)
 
+# (Opcional) si quieres permitir tu dominio fijo
+# ALLOWED_HOSTS += ["hojadevidaabel.onrender.com"]
+
 # =========================
 # DOTENV (LOCAL ONLY)
 # =========================
-# Solo intenta cargar .env si existe (en Render no existe y no se necesita)
-if os.path.exists(BASE_DIR / ".env"):
+# Carga .env SOLO si existe (en Render normalmente no existe)
+env_path = BASE_DIR / ".env"
+if env_path.exists():
     try:
         from dotenv import load_dotenv
-        load_dotenv(BASE_DIR / ".env")
+        load_dotenv(env_path)
     except Exception:
-        # Si no está python-dotenv instalado, no rompemos local (aunque lo ideal es instalarlo)
         pass
 
 # =========================
@@ -57,9 +60,11 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
 
+    # Cloudinary
     "cloudinary",
     "cloudinary_storage",
 
+    # Tu app
     "paginausuario",
 ]
 
@@ -69,6 +74,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
+
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -78,41 +84,11 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = "hojadevida.urls"
-WSGI_APPLICATION = "hojadevida.wsgi.application"
 
-# =========================
-# DATABASE (POSTGRES ONLY)
-# =========================
-DATABASE_URL = os.environ.get("DATABASE_URL")
-if not DATABASE_URL:
-    raise RuntimeError("DATABASE_URL no está configurada. Configúrala en Render o en tu .env local.")
-
-DATABASES = {
-    "default": dj_database_url.parse(
-        DATABASE_URL,
-        conn_max_age=600,
-        ssl_require=True,
-    )
-}
-
-# =========================
-# STATIC / MEDIA
-# =========================
-STATIC_URL = "/static/"
-STATIC_ROOT = BASE_DIR / "staticfiles"
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
-
-MEDIA_URL = "/media/"
-MEDIA_ROOT = BASE_DIR / "media"
-DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
-
-# =========================
-# TEMPLATES
-# =========================
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],  # o [BASE_DIR / "templates"] si tienes templates globales
+        "DIRS": [],  # si tienes templates globales: [BASE_DIR / "templates"]
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -124,10 +100,62 @@ TEMPLATES = [
     },
 ]
 
+WSGI_APPLICATION = "hojadevida.wsgi.application"
 
+# =========================
+# DATABASE (Postgres en Render)
+# =========================
+DATABASE_URL = os.environ.get("DATABASE_URL")
 
-import os
+if DATABASE_URL:
+    DATABASES = {
+        "default": dj_database_url.parse(
+            DATABASE_URL,
+            conn_max_age=600,
+            ssl_require=True,
+        )
+    }
+else:
+    # fallback local (sqlite) si no configuras DATABASE_URL
+    # Si NO quieres sqlite, borra esto y deja que falle.
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }
 
+# =========================
+# PASSWORD VALIDATION
+# =========================
+AUTH_PASSWORD_VALIDATORS = [
+    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
+]
+
+# =========================
+# I18N / TIMEZONE
+# =========================
+LANGUAGE_CODE = "es-ec"
+TIME_ZONE = "America/Guayaquil"
+USE_I18N = True
+USE_TZ = True
+
+# =========================
+# STATIC (Whitenoise)
+# =========================
+STATIC_URL = "/static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
+# Si tienes carpeta "static" en tu proyecto, descomenta:
+# STATICFILES_DIRS = [BASE_DIR / "static"]
+
+# =========================
+# MEDIA (Cloudinary)
+# =========================
 CLOUDINARY_STORAGE = {
     "CLOUD_NAME": os.environ.get("CLOUDINARY_CLOUD_NAME"),
     "API_KEY": os.environ.get("CLOUDINARY_API_KEY"),
@@ -135,3 +163,25 @@ CLOUDINARY_STORAGE = {
 }
 
 DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
+
+# Si aún usas algo local para media (no recomendado en Render), puedes dejar:
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
+
+# =========================
+# SECURITY HEADERS (recomendado en producción)
+# =========================
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+CSRF_TRUSTED_ORIGINS = [
+    "https://*.onrender.com",
+]
+
+# En producción puedes activar esto si ya todo funciona por https:
+# SESSION_COOKIE_SECURE = True
+# CSRF_COOKIE_SECURE = True
+# SECURE_SSL_REDIRECT = True
+
+# =========================
+# DEFAULTS
+# =========================
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
