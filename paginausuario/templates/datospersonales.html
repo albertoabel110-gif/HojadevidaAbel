@@ -5,28 +5,73 @@
 {% block content %}
 
 <style>
+
+  /* ===========================
+     ESTILOS GENERALES
+  ============================ */
+
   .profile-photo{
     width: 170px;
     height: 170px;
     object-fit: cover;
     border-radius: 18px;
   }
+
   .info-label{
     font-size: .85rem;
     color: #6c757d;
     margin-bottom: 2px;
   }
+
   .info-value{
     font-weight: 600;
     margin-bottom: 10px;
   }
+
   .text-truncate-cell{
     max-width: 320px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
+
+  /* ===========================
+     MARCOS PROFESIONALES (AZUL)
+  ============================ */
+
+  .info-card{
+    border: 1px solid rgba(37,99,235,.25);
+    border-radius: 20px;
+    background: linear-gradient(135deg,
+                rgba(37,99,235,.06),
+                rgba(14,165,233,.06));
+    backdrop-filter: blur(4px);
+    transition: .15s ease-in-out;
+  }
+
+  .info-card:hover{
+    border-color: rgba(37,99,235,.45);
+    box-shadow: 0 10px 25px rgba(37,99,235,.18);
+    transform: translateY(-2px);
+  }
+
+  /* ===========================
+     TÍTULOS DE SECCIÓN
+  ============================ */
+
+  .section-title{
+    text-transform: uppercase;
+    letter-spacing: .6px;
+    font-weight: 700;
+    color: #1d4ed8;
+    font-size: .82rem;
+  }
+
 </style>
+
+
+
+
 
 {# ================= LISTA ================= #}
 {% if vista == "lista" %}
@@ -48,6 +93,7 @@
           {% for p in personas %}
             <div class="list-group-item d-flex justify-content-between align-items-center">
               <div class="d-flex align-items-center gap-3">
+
                 {% if p.foto %}
                   <img src="{{ p.foto.url }}" alt="Foto" width="52" height="52" style="border-radius:14px;object-fit:cover;">
                 {% else %}
@@ -66,10 +112,12 @@
 
               <div class="text-nowrap">
                 <a href="{% url 'detalle_persona' p.pk %}" class="btn btn-outline-secondary btn-sm">Ver</a>
+
                 {% if request.user.is_authenticated and request.user.is_staff %}
                   <a href="{% url 'editar_persona' p.pk %}" class="btn btn-warning btn-sm">✏️</a>
                 {% endif %}
               </div>
+
             </div>
           {% endfor %}
         </div>
@@ -81,6 +129,11 @@
     </div>
   </div>
 {% endif %}
+
+
+
+
+
 
 {# ================= DETALLE ================= #}
 {% if vista == "detalle" %}
@@ -95,16 +148,19 @@
         {% if request.user.is_authenticated and request.user.is_staff %}
           <a href="{% url 'editar_persona' persona.pk %}" class="btn btn-warning btn-sm">✏️ Editar</a>
         {% endif %}
+
         <a href="{% url 'user_dashboard' %}" class="btn btn-outline-secondary btn-sm">Volver</a>
       </div>
     </div>
 
     <div class="card-body">
       <div class="row g-4">
-        <!-- Columna izquierda: foto y resumen -->
+
+        <!-- ================= FOTO ================= -->
         <div class="col-12 col-lg-4">
-          <div class="card border-0 bg-light h-100">
+          <div class="card info-card h-100">
             <div class="card-body text-center">
+
               {% if persona.foto %}
                 <img src="{{ persona.foto.url }}" class="profile-photo shadow-sm" alt="Foto de perfil">
               {% else %}
@@ -130,17 +186,21 @@
                   <strong>ID:</strong> {{ persona.idperfil }}
                 </div>
               {% endif %}
+
             </div>
           </div>
         </div>
 
-        <!-- Columna derecha: datos -->
+
+        <!-- ================= IDENTIDAD & CONTACTO ================= -->
         <div class="col-12 col-lg-8">
           <div class="row g-3">
+
             <div class="col-12 col-md-6">
-              <div class="card border-0 shadow-sm h-100">
+              <div class="card info-card h-100">
                 <div class="card-body">
-                  <h6 class="text-uppercase text-muted mb-3">Identidad</h6>
+
+                  <h6 class="section-title mb-3">Identidad</h6>
 
                   <div class="info-label">Cédula</div>
                   <div class="info-value">{{ persona.numerocedula }}</div>
@@ -153,14 +213,17 @@
 
                   <div class="info-label">Licencia de conducir</div>
                   <div class="info-value">{{ persona.licenciaconducir }}</div>
+
                 </div>
               </div>
             </div>
 
+
             <div class="col-12 col-md-6">
-              <div class="card border-0 shadow-sm h-100">
+              <div class="card info-card h-100">
                 <div class="card-body">
-                  <h6 class="text-uppercase text-muted mb-3">Contacto</h6>
+
+                  <h6 class="section-title mb-3">Contacto</h6>
 
                   <div class="info-label">Teléfono convencional</div>
                   <div class="info-value">{{ persona.telefonoconvencional }}</div>
@@ -173,20 +236,25 @@
 
                   <div class="info-label">Dirección domiciliaria</div>
                   <div class="info-value">{{ persona.direcciondomiciliaria }}</div>
+
                 </div>
               </div>
             </div>
 
+
+            <!-- ================= PERFIL ================= -->
             <div class="col-12">
-              <div class="card border-0 shadow-sm">
+              <div class="card info-card">
                 <div class="card-body">
-                  <h6 class="text-uppercase text-muted mb-3">Perfil</h6>
+
+                  <h6 class="section-title mb-3">Perfil</h6>
 
                   <div class="info-label">Descripción del perfil</div>
                   <div class="info-value">{{ persona.descripcionperfil }}</div>
 
                   <div class="info-label">Sitio web</div>
                   <div class="info-value text-truncate-cell" title="{{ persona.sitioweb }}">
+
                     {% if persona.sitioweb %}
                       <a href="{{ persona.sitioweb }}" target="_blank" rel="noopener">
                         {{ persona.sitioweb }}
@@ -194,21 +262,31 @@
                     {% else %}
                       <span class="text-muted">—</span>
                     {% endif %}
+
                   </div>
+
                 </div>
               </div>
             </div>
 
           </div>
         </div>
+
+
       </div>
     </div>
   </div>
 {% endif %}
 
+
+
+
+
+
 {# ================= FORMULARIO ================= #}
 {% if vista == "formulario" %}
   <div class="card shadow-sm border-0">
+
     <div class="card-header bg-white d-flex justify-content-between align-items-center">
       <div>
         <h3 class="mb-0">Formulario</h3>
@@ -219,9 +297,9 @@
     </div>
 
     <div class="card-body">
+
       <form method="post" enctype="multipart/form-data" class="row g-3">
         {% csrf_token %}
-
         <div class="col-12">
           {{ form.as_p }}
         </div>
@@ -234,6 +312,7 @@
       <div class="alert alert-warning mt-3 mb-0">
         <strong>Nota:</strong> Solo el administrador puede guardar/editar esta información.
       </div>
+
     </div>
   </div>
 {% endif %}

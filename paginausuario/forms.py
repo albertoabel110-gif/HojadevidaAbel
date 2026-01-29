@@ -5,18 +5,15 @@ from .models import DatosPersonales
 from .models import ExperienciaLaboral
 
 class DatosPersonalesForm(forms.ModelForm):
+    fechanacimiento = forms.DateField(
+        input_formats=["%Y-%m-%d", "%d/%m/%Y"],
+        widget=forms.DateInput(attrs={"type": "date", "class": "form-control"})
+    )
+
     class Meta:
         model = DatosPersonales
         fields = "__all__"
-        widgets = {
-            "fechanacimiento": forms.DateInput(
-                attrs={
-                    "type": "date",
-                    "class": "form-control"
-                }
-            ),
-        }
-
+        
     def clean_fechanacimiento(self):
         f = self.cleaned_data.get("fechanacimiento")
         if f and f > date.today():

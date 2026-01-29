@@ -74,8 +74,8 @@ class ExperienciaLaboral(models.Model):
     cargodesempenado = models.CharField(max_length=200)
     nombrempresa = models.CharField(max_length=50)
     lugarempresa = models.CharField(max_length=200)
-    emailempresa = models.CharField(max_length=100)
-    sitiowebempresa = models.CharField(max_length=100)
+    emailempresa = models.CharField(max_length=150)
+    sitiowebempresa = models.CharField(max_length=200)
 
     nombrecontactoempresarial = models.CharField(max_length=100)
     telefonocontactoempresarial = models.CharField(max_length=60)
@@ -83,7 +83,7 @@ class ExperienciaLaboral(models.Model):
     fechainiciogestion = models.DateField()
     fechafingestion = models.DateField(null=True, blank=True)
 
-    descripcionfunciones = models.CharField(max_length=100)
+    descripcionfunciones = models.CharField(max_length=255)
 
     activarparaqueseveaenfront = models.BooleanField(default=True)
 
@@ -124,7 +124,7 @@ class Reconocimiento(models.Model):
     tiporeconocimiento = models.CharField(max_length=100, choices=TIPO_CHOICES)
 
     fechareconocimiento = models.DateField()
-    descripcionreconocimiento = models.CharField(max_length=200)
+    descripcionreconocimiento = models.CharField(max_length=255)
 
     entidadpatrocinadora = models.CharField(max_length=100)
     nombrecontactoauspicia = models.CharField(max_length=100)
@@ -158,7 +158,7 @@ class CursoRealizado(models.Model):
     fechafin = models.DateField()
 
     totalhoras = models.CharField(max_length=100)
-    descripcioncurso = models.CharField(max_length=200)
+    descripcioncurso = models.CharField(max_length=255)
 
     entidadpatrocinadora = models.CharField(max_length=100)
     nombrecontactoauspicia = models.CharField(max_length=100)
@@ -201,7 +201,7 @@ class ProductoAcademico(models.Model):
 
     nombrerecurso = models.CharField(max_length=100)
     clasificador = models.CharField(max_length=100)
-    descripcion = models.CharField(max_length=200)
+    descripcion = models.CharField(max_length=255)
 
     activarparaqueseveaenfront = models.BooleanField(default=True)
 
