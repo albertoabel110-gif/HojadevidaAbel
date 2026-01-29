@@ -7,24 +7,21 @@ from .models import ExperienciaLaboral
 class DatosPersonalesForm(forms.ModelForm):
     class Meta:
         model = DatosPersonales
-        fields = [
-            'descripcionperfil',
-            'perfilactivo',
-            'apellidos',
-            'nombres',
-            'nacionalidad',
-            'lugarnacimiento',
-            'numerocedula',
-            'sexo',
-            'estadocivil',
-            'licenciaconducir',
-            'telefonoconvencional',
-            'telefonofijo',
-            'direcciontrabajo',
-            'direcciondomiciliaria',
-            'sitioweb',
-            'fechanacimiento',
-        ]
+        fields = "__all__"
+        widgets = {
+            "fechanacimiento": forms.DateInput(
+                attrs={
+                    "type": "date",
+                    "class": "form-control"
+                }
+            ),
+        }
+
+    def clean_fechanacimiento(self):
+        f = self.cleaned_data.get("fechanacimiento")
+        if f and f > date.today():
+            raise forms.ValidationError("La fecha no puede ser futura.")
+        return f
 
 from datetime import date
 from django import forms

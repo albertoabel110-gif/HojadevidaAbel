@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from django.db import models
 from cloudinary.models import CloudinaryField
 from cloudinary_storage.storage import RawMediaCloudinaryStorage
+from django.core.exceptions import ValidationError
 
 
 class Task(models.Model):
@@ -28,7 +29,7 @@ class DatosPersonales(models.Model):
     nombres = models.CharField(max_length=60)
     nacionalidad = models.CharField(max_length=20)
     lugarnacimiento = models.CharField(max_length=60)
-    fechanacimiento = models.CharField(max_length=60)
+    fechanacimiento = models.DateField()
 
 
     numerocedula = models.CharField(max_length=10, unique=True)
@@ -54,6 +55,11 @@ class DatosPersonales(models.Model):
 
     def __str__(self):
         return f"{self.nombres} {self.apellidos}"
+    
+    def clean(self):
+        super().clean()
+        if self.fechanacimiento and self.fechanacimiento > timezone.localdate():
+            raise ValidationError({"fechanacimiento": "La fecha no puede ser futura."})
     
 			
 class ExperienciaLaboral(models.Model):
@@ -86,6 +92,19 @@ class ExperienciaLaboral(models.Model):
     class Meta:
         db_table = "EXPERIENCIALABORAL"
 
+    def clean(self):
+        super().clean()
+        hoy = timezone.localdate()
+
+        if self.fechainiciogestion and self.fechainiciogestion > hoy:
+            raise ValidationError({"fechainiciogestion": "La fecha de inicio no puede ser futura."})
+
+        if self.fechafingestion:
+            if self.fechafingestion > hoy:
+                raise ValidationError({"fechafingestion": "La fecha de fin no puede ser futura."})
+            if self.fechainiciogestion and self.fechafingestion < self.fechainiciogestion:
+                raise ValidationError({"fechafingestion": "La fecha de fin no puede ser menor que la fecha de inicio."})
+
 			
 			
 class Reconocimiento(models.Model):
@@ -116,6 +135,13 @@ class Reconocimiento(models.Model):
 
     class Meta:
         db_table = "RECONOCIMIENTOS"
+    
+    def clean(self):
+        super().clean()
+        hoy = timezone.localdate()
+
+        if self.fechareconocimiento and self.fechareconocimiento > hoy:
+            raise ValidationError({"fechareconocimiento": "La fecha del reconocimiento no puede ser futura."})
 
 			
 class CursoRealizado(models.Model):
@@ -149,6 +175,19 @@ class CursoRealizado(models.Model):
 
     class Meta:
         db_table = "CURSOSREALIZADOS"
+
+    def clean(self):
+        super().clean()
+        hoy = timezone.localdate()
+
+        if self.fechainicio and self.fechainicio > hoy:
+            raise ValidationError({"fechainicio": "La fecha de inicio no puede ser futura."})
+
+        if self.fechafin and self.fechafin > hoy:
+            raise ValidationError({"fechafin": "La fecha de fin no puede ser futura."})
+
+        if self.fechainicio and self.fechafin and self.fechafin < self.fechainicio:
+            raise ValidationError({"fechafin": "La fecha de fin no puede ser menor que la fecha de inicio."})
 
 			
 class ProductoAcademico(models.Model):
@@ -187,6 +226,14 @@ class ProductoLaboral(models.Model):
 
     class Meta:
         db_table = "PRODUCTOSLABORALES"
+    
+    def clean(self):
+        super().clean()
+        hoy = timezone.localdate()
+
+        if self.fechaproducto and self.fechaproducto > hoy:
+            raise ValidationError({"fechaproducto": "La fecha del producto no puede ser futura."})
+			
 	
 			
 from django.utils import timezone
@@ -223,6 +270,13 @@ class VentaGarage(models.Model):
 
     class Meta:
         db_table = "VENTAGARAGE"
+    
+    def clean(self):
+        super().clean()
+        hoy = timezone.localdate()
+
+        if self.fechapublicacion and self.fechapublicacion > hoy:
+            raise ValidationError({"fechapublicacion": "La fecha de publicación no puede ser futura."})
 
 from django.db import models
 

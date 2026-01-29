@@ -140,7 +140,7 @@ from .models import DatosPersonales
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404
 from django.contrib.admin.views.decorators import staff_member_required
-
+from .forms import DatosPersonalesForm
 
 def lista_personas(request):
     persona = DatosPersonales.objects.filter(perfilactivo=1).first()
@@ -149,43 +149,31 @@ def lista_personas(request):
         "persona": persona
     })
 
-
-
 def detalle_persona(request, pk):
-    persona = DatosPersonales.objects.get(pk=pk)
+    persona = get_object_or_404(DatosPersonales, pk=pk)
     return render(request, "datospersonales.html", {
         "vista": "detalle",
         "persona": persona
     })
 
-from django.forms import modelform_factory
-
-FormularioDatos = modelform_factory(DatosPersonales, fields="__all__")
-
-
 @staff_member_required
 def formulario_persona(request, pk):
-    persona = DatosPersonales.objects.get(pk=pk)
+    persona = get_object_or_404(DatosPersonales, pk=pk)
 
     if request.method == "POST":
-        form = FormularioDatos(
-            request.POST,
-            request.FILES,
-            instance=persona   # 👈 CLAVE
-        )
-
+        form = DatosPersonalesForm(request.POST, request.FILES, instance=persona)
         if form.is_valid():
             datos = form.save(commit=False)
             datos.user = request.user
             datos.save()
             return redirect("detalle_persona", pk=persona.pk)
-
     else:
-        form = FormularioDatos(instance=persona)
+        form = DatosPersonalesForm(instance=persona)
 
     return render(request, "datospersonales.html", {
         "vista": "formulario",
-        "form": form
+        "form": form,
+        "persona": persona,
     })
 from django.contrib.admin.views.decorators import staff_member_required
 from django.shortcuts import redirect, render
