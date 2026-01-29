@@ -2,282 +2,197 @@
 {% block title %}Venta Garage{% endblock %}
 
 {% block content %}
+
 <style>
-  .table-wrap{
-    border:1px solid rgba(0,0,0,.08);
-    border-radius:14px;
-    overflow:hidden;
-    background:#fff;
+  .sale-card{
+    border: 1px solid rgba(0,0,0,.08);
+    background: #fff;
+    border-radius: 18px;
+    padding: 16px;
+    box-shadow: 0 4px 14px rgba(0,0,0,.06);
+    transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+    overflow: hidden;
   }
-  .card-header-clean{
-    background:#fff;
-    border-bottom:1px solid rgba(0,0,0,.06);
-  }
-  .table-clean{ margin-bottom:0; font-size:.92rem; }
-  .table-clean thead th{
-    position: sticky; top: 0; z-index: 2;
-    background:#111; color:#fff; border-bottom:0;
-    padding:.9rem .75rem; white-space:nowrap;
-  }
-  .table-clean tbody td{
-    vertical-align: top;
-    padding:.85rem .75rem;
-    border-top:1px solid rgba(0,0,0,.06);
-  }
-  .table-clean tbody tr:nth-child(even){ background: rgba(0,0,0,.02); }
-  .table-clean tbody tr:hover{ background: rgba(0,0,0,.04); }
-
-  /* Mostrar texto completo */
-  .cell-wrap{
-    white-space: normal !important;
-    word-break: break-word;
-    overflow-wrap:anywhere;
+  .sale-card:hover{
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgba(0,0,0,.09);
+    border-color: rgba(0,0,0,.12);
   }
 
-  /* Imagen */
-  .img-thumb{
-    width: 84px;
-    height: 64px;
+  .sale-img{
+    width: 160px;
+    height: 120px;
     object-fit: cover;
-    border-radius: 12px;
+    border-radius: 14px;
     border: 1px solid rgba(0,0,0,.10);
     box-shadow: 0 3px 10px rgba(0,0,0,.08);
-    transition: transform .12s ease;
+    background: #f3f4f6;
   }
-  .img-thumb:hover{ transform: scale(1.03); }
 
-  /* Columnas */
-  .col-prod{ min-width: 220px; }
-  .col-desc{ min-width: 360px; max-width: 640px; }
-  .col-valor{ min-width: 120px; }
-  .col-img{ min-width: 140px; }
-  .col-acciones{ min-width: 130px; }
-
-  .btn-icon{
-    width:38px; height:34px;
-    display:inline-flex; align-items:center; justify-content:center;
-    padding:0;
+  .sale-title{
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #111827;
+    line-height: 1.2;
   }
+  .sale-muted{ color:#6b7280; font-size:.93rem; }
+
+  .section-title{
+    font-size: .82rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+    color: #374151;
+    margin-top: 10px;
+    margin-bottom: 4px;
+  }
+
+  .text-block{
+    font-size: .95rem;
+    color: #1f2937;
+    white-space: normal;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    line-height: 1.5;
+  }
+
+  .price{
+    font-weight: 900;
+    font-size: 1.05rem;
+  }
+
   .badge-soft{
     background: rgba(0,0,0,.06);
-    color:#222;
-    font-weight:600;
+    color:#111827;
+    font-weight: 700;
+    border-radius: 999px;
+    padding: .35rem .7rem;
+    font-size: .8rem;
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
   }
 
-  /* Barra filtros */
-  .filters{
-    display:flex;
-    flex-wrap:wrap;
-    gap:.75rem;
-    align-items:center;
-  }
-  .filters .form-control,
-  .filters .form-select{
-    height:38px;
-  }
-  .hint{
-    font-size:.85rem;
-    color:#6c757d;
+  /* Estados */
+  .status-excelente{ background: rgba(25,135,84,.14); color:#0f5132; border:1px solid rgba(25,135,84,.25); }
+  .status-bueno{ background: rgba(13,110,253,.14); color:#084298; border:1px solid rgba(13,110,253,.25); }
+  .status-regular{ background: rgba(255,193,7,.18); color:#664d03; border:1px solid rgba(255,193,7,.30); }
+
+  /* Acciones */
+  .sale-actions .btn{
+    border-radius: 10px;
+    padding: .25rem .6rem;
+    font-size: .85rem;
   }
 
-  /* Filas con estado (más suave que table-success/primary/warning) */
-  tr.state-excelente { background: rgba(25,135,84,.08); }
-  tr.state-bueno     { background: rgba(13,110,253,.08); }
-  tr.state-regular   { background: rgba(255,193,7,.10); }
+  /* Header */
+  .header-card{
+    border:0;
+    border-radius: 18px;
+    overflow:hidden;
+    background: #fff;
+    box-shadow: 0 4px 14px rgba(0,0,0,.06);
+  }
+
+  @media (max-width: 576px){
+    .sale-img{ width: 100%; height: 180px; }
+  }
 </style>
 
-<div class="card shadow-sm border-0">
-  <div class="card-header card-header-clean d-flex flex-wrap gap-2 justify-content-between align-items-center">
+<div class="header-card mb-4">
+  <div class="p-3 p-md-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
     <div>
       <h3 class="mb-0">Venta de Garage</h3>
       <small class="text-muted">Productos publicados</small>
     </div>
 
     <div class="d-flex align-items-center gap-2">
-      <span class="badge badge-soft">Total: {{ ventas|length }}</span>
-
+      <span class="badge-soft">Total: {{ ventas|length }}</span>
       {% if request.user.is_authenticated and request.user.is_staff %}
         <a href="{% url 'ventagarage_create' %}" class="btn btn-dark btn-sm">➕ Nuevo Producto</a>
       {% endif %}
     </div>
   </div>
-
-  <div class="card-body">
-
-    <!-- Barra de búsqueda / filtros -->
-    <div class="filters mb-3">
-      <div class="flex-grow-1" style="min-width:260px;">
-        <input id="searchInput" type="search" class="form-control"
-               placeholder="🔎 Buscar (producto, estado, descripción, fecha, valor...)">
-        <div class="hint mt-1">Tip: filtra en vivo por cualquier columna.</div>
-      </div>
-
-      <div style="min-width:180px;">
-        <select id="rowsPerPage" class="form-select">
-          <option value="10">Mostrar 10</option>
-          <option value="25" selected>Mostrar 25</option>
-          <option value="50">Mostrar 50</option>
-          <option value="100">Mostrar 100</option>
-          <option value="999999">Mostrar todo</option>
-        </select>
-      </div>
-
-      <div class="ms-auto d-flex align-items-center gap-2">
-        <span class="badge badge-soft" id="resultsCount">Mostrando 0</span>
-        <button id="clearBtn" type="button" class="btn btn-outline-secondary btn-sm">Limpiar</button>
-      </div>
-    </div>
-
-    <div class="table-wrap">
-      <div class="table-responsive" style="max-height:70vh;">
-        <table class="table table-clean align-middle" id="ventaTable">
-          <thead>
-            <tr>
-              {% if request.user.is_authenticated and request.user.is_staff %}
-                <th>ID</th>
-              {% endif %}
-              <th class="col-prod">Producto</th>
-              <th>Estado</th>
-              <th>Fecha publicación</th>
-              <th class="col-desc">Descripción</th>
-              <th class="text-end col-valor">Valor</th>
-              <th class="col-img">Imagen</th>
-              {% if request.user.is_authenticated and request.user.is_staff %}
-                <th class="text-end col-acciones">Acciones</th>
-              {% endif %}
-            </tr>
-          </thead>
-
-          <tbody>
-            {% for v in ventas %}
-            <tr
-              class="
-                {% if v.estadoproducto == 'Excelente' %} state-excelente
-                {% elif v.estadoproducto == 'Bueno' %} state-bueno
-                {% elif v.estadoproducto == 'Regular' %} state-regular
-                {% endif %}
-              "
-            >
-              {% if request.user.is_authenticated and request.user.is_staff %}
-                <td class="text-muted">{{ v.idventagarage }}</td>
-              {% endif %}
-
-              <td class="fw-semibold cell-wrap col-prod">{{ v.nombreproducto|default:"—" }}</td>
-
-              <td class="text-nowrap">
-                {% if v.estadoproducto == 'Excelente' %}
-                  <span class="badge text-bg-success">Excelente</span>
-                {% elif v.estadoproducto == 'Bueno' %}
-                  <span class="badge text-bg-primary">Bueno</span>
-                {% elif v.estadoproducto == 'Regular' %}
-                  <span class="badge text-bg-warning text-dark">Regular</span>
-                {% else %}
-                  <span class="badge badge-soft">—</span>
-                {% endif %}
-              </td>
-
-              <td class="text-nowrap">
-                {% if v.fechapublicacion %}{{ v.fechapublicacion|date:"d M, Y" }}{% else %}—{% endif %}
-              </td>
-
-              <td class="cell-wrap col-desc">{{ v.descripcion|default:"—" }}</td>
-
-              <td class="text-end fw-semibold col-valor">
-                {% if v.valordelbien != None %}
-                  ${{ v.valordelbien }}
-                {% else %}
-                  —
-                {% endif %}
-              </td>
-
-              <td class="col-img">
-                {% if v.articulo %}
-                  <a href="{{ v.articulo.url }}" target="_blank" rel="noopener">
-                    <img src="{{ v.articulo.url }}" class="img-thumb" alt="imagen">
-                  </a>
-                {% else %}
-                  <span class="text-muted">Sin imagen</span>
-                {% endif %}
-              </td>
-
-              {% if request.user.is_authenticated and request.user.is_staff %}
-              <td class="text-end text-nowrap col-acciones">
-                <a href="{% url 'ventagarage_update' v.pk %}" class="btn btn-warning btn-sm btn-icon" title="Editar">✏️</a>
-                <a href="{% url 'ventagarage_delete' v.pk %}" class="btn btn-danger btn-sm btn-icon" title="Eliminar">🗑️</a>
-              </td>
-              {% endif %}
-            </tr>
-
-            {% empty %}
-            <tr>
-              <td colspan="10" class="text-center text-muted py-4">
-                No hay productos en venta
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-
-        </table>
-      </div>
-    </div>
-
-  </div>
 </div>
 
-<script>
-  (function () {
-    const searchInput = document.getElementById("searchInput");
-    const rowsPerPage = document.getElementById("rowsPerPage");
-    const clearBtn = document.getElementById("clearBtn");
-    const resultsCount = document.getElementById("resultsCount");
+{% if ventas %}
+  <div class="d-grid gap-3">
+    {% for v in ventas %}
+      <div class="sale-card">
 
-    const table = document.getElementById("ventaTable");
-    const tbody = table.querySelector("tbody");
+        <div class="row g-3 align-items-start">
+          <!-- Imagen -->
+          <div class="col-12 col-sm-auto">
+            {% if v.articulo %}
+              <a href="{{ v.articulo.url }}" target="_blank" rel="noopener">
+                <img src="{{ v.articulo.url }}" class="sale-img" alt="imagen">
+              </a>
+            {% else %}
+              <div class="sale-img d-flex align-items-center justify-content-center text-muted">
+                Sin imagen
+              </div>
+            {% endif %}
+          </div>
 
-    let allRows = Array.from(tbody.querySelectorAll("tr"));
+          <!-- Info -->
+          <div class="col">
+            <div class="d-flex justify-content-between flex-wrap gap-2">
+              <div>
+                <div class="sale-title">{{ v.nombreproducto|default:"—" }}</div>
 
-    function isEmptyRow(row){
-      return row.innerText.trim().toLowerCase().includes("no hay productos en venta");
-    }
-    allRows = allRows.filter(r => !isEmptyRow(r));
+                <div class="sale-muted mt-1">
+                  {% if v.fechapublicacion %}
+                    Publicado: {{ v.fechapublicacion|date:"d M Y" }}
+                  {% else %}
+                    Publicado: —
+                  {% endif %}
+                </div>
+              </div>
 
-    function applyFilters() {
-      const q = (searchInput.value || "").trim().toLowerCase();
-      const limit = parseInt(rowsPerPage.value, 10);
+              <div class="text-end">
+                <div class="price">
+                  {% if v.valordelbien != None %}
+                    ${{ v.valordelbien }}
+                  {% else %}
+                    —
+                  {% endif %}
+                </div>
 
-      const matchedRows = allRows.filter(r => {
-        const text = r.innerText.toLowerCase();
-        return !q || text.includes(q);
-      });
+                <div class="mt-2">
+                  {% if v.estadoproducto == 'Excelente' %}
+                    <span class="badge-soft status-excelente">✅ Excelente</span>
+                  {% elif v.estadoproducto == 'Bueno' %}
+                    <span class="badge-soft status-bueno">👍 Bueno</span>
+                  {% elif v.estadoproducto == 'Regular' %}
+                    <span class="badge-soft status-regular">⚠️ Regular</span>
+                  {% else %}
+                    <span class="badge-soft">—</span>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
 
-      let visible = 0;
-      allRows.forEach((row) => {
-        const text = row.innerText.toLowerCase();
-        const match = !q || text.includes(q);
+            <!-- Descripción -->
+            <div class="section-title">Descripción</div>
+            <div class="text-block">{{ v.descripcion|default:"—" }}</div>
 
-        if (match && visible < limit) {
-          row.style.display = "";
-          visible++;
-        } else {
-          row.style.display = "none";
-        }
-      });
+            <!-- Acciones admin -->
+            {% if request.user.is_authenticated and request.user.is_staff %}
+              <div class="sale-actions mt-3 d-flex gap-2 flex-wrap">
+                <a href="{% url 'ventagarage_update' v.pk %}" class="btn btn-warning btn-sm">✏️ Editar</a>
+                <a href="{% url 'ventagarage_delete' v.pk %}" class="btn btn-danger btn-sm">🗑️ Eliminar</a>
+              </div>
+            {% endif %}
+          </div>
+        </div>
 
-      resultsCount.textContent = `Mostrando ${visible} de ${matchedRows.length}`;
-    }
-
-    searchInput.addEventListener("input", applyFilters);
-    rowsPerPage.addEventListener("change", applyFilters);
-
-    clearBtn.addEventListener("click", () => {
-      searchInput.value = "";
-      rowsPerPage.value = "25";
-      applyFilters();
-      searchInput.focus();
-    });
-
-    applyFilters();
-  })();
-</script>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="alert alert-secondary text-center">
+    No hay productos en venta.
+  </div>
+{% endif %}
 
 {% endblock %}
